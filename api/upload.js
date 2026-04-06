@@ -1,199 +1,210 @@
 import { put, list, del } from '@vercel/blob';
 
-export const config = { api: { bodyParser: false } };
+export const config = {
+  api: { bodyParser: false }
+};
 
-// 멀티파트 파싱 (의존성 없이 직접 구현)
-async function parseMultipart(req) {
+// Buffer로 raw body 읽기
+function readBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
-    req.on('data', chunk => chunks.push(chunk));
-    req.on('end', () => {
-      const body = Buffer.concat(chunks);
-      const contentType = req.headers['content-type'] || '';
-      const boundaryMatch = contentType.match(/boundary=(.+)$/);
-      if (!boundaryMatch) return reject(new Error('No boundary'));
-
-      const boundary = boundaryMatch[1];
-      const parts = [];
-      const boundaryBuf = Buffer.from(`--${boundary}`);
-
-      let start = 0;
-      while (start < body.length) {
-        const bIdx = body.indexOf(boundaryBuf, start);
-        if (bIdx === -1) break;
-        const headerStart = bIdx + boundaryBuf.length + 2;
-        const headerEnd = body.indexOf(Buffer.from('\r\n\r\n'), headerStart);
-        if (headerEnd === -1) break;
-        const header = body.slice(headerStart, headerEnd).toString();
-        const dataStart = headerEnd + 4;
-        const nextBoundary = body.indexOf(boundaryBuf, dataStart);
-        const dataEnd = nextBoundary === -1 ? body.length : nextBoundary - 2;
-        const data = body.slice(dataStart, dataEnd);
-
-        const nameMatch = header.match(/name="([^"]+)"/);
-        const filenameMatch = header.match(/filename="([^"]+)"/);
-        if (nameMatch) {
-          parts.push({
-            name: nameMatch[1],
-            filename: filenameMatch ? filenameMatch[1] : null,
-            data,
-            header
-          });
-        }
-        start = bIdx + boundaryBuf.length;
-      }
-      resolve(parts);
-    });
+    req.on('data', c => chunks.push(c));
+    req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
   });
 }
 
-// PDF 텍스트 추출 (pdf-parse 사용)
-async function extractPdfText(buffer) {
+// multipart에서 파일 파트 추출
+function extractFile(body, boundary) {
+  const boundaryBuf = Buffer.from(`--${boundary}`);
+  let pos = 0;
+
+  while (pos < body.length) {
+    const bPos = body.indexOf(boundaryBuf, pos);
+    if (bPos === -1) break;
+    const lineEnd = body.indexOf(Buffer.from('\r\n\r\n'), bPos);
+    if (lineEnd === -1) break;
+    const header = body.slice(bPos + boundaryBuf.length + 2, lineEnd).toString();
+
+    if (header.includes('filename=')) {
+      const fnMatch = header.match(/filename="([^"]+)"/);
+      const filename = fnMatch ? fnMatch[1] : 'unknown';
+      const dataStart = lineEnd + 4;
+      const nextBound = body.indexOf(boundaryBuf, dataStart);
+      const dataEnd = nextBound === -1 ? body.length : nextBound - 2;
+      return { filename, data: body.slice(dataStart, dataEnd) };
+    }
+    pos = bPos + boundaryBuf.length;
+  }
+  return null;
+}
+
+// ── 텍스트 추출 함수들 ──
+
+async function extractPdf(buf) {
   try {
-    const pdfParse = (await import('pdf-parse/lib/pdf-parse.js')).default;
-    const result = await pdfParse(buffer);
+    const mod = await import('pdf-parse');
+    const pdfParse = mod.default || mod;
+    const result = await pdfParse(buf);
     return result.text || '';
   } catch (e) {
-    console.error('PDF 추출 오류:', e.message);
-    return `[PDF 텍스트 추출 실패: ${e.message}]`;
+    // pdf-parse 실패 시 기본 텍스트 추출 시도
+    const str = buf.toString('latin1');
+    const texts = [];
+    const re = /BT[\s\S]*?ET/g;
+    let m;
+    while ((m = re.exec(str)) !== null) {
+      const inner = m[0].replace(/[^\x20-\x7E가-힣]/g, ' ');
+      if (inner.trim().length > 3) texts.push(inner.trim());
+    }
+    return texts.join('\n') || `[PDF 추출 실패: ${e.message}]`;
   }
 }
 
-// Excel 텍스트 추출 (xlsx 사용)
-async function extractExcelText(buffer) {
+async function extractExcel(buf) {
   try {
-    const XLSX = (await import('xlsx')).default;
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
+    const mod = await import('xlsx');
+    const XLSX = mod.default || mod;
+    const wb = XLSX.read(buf, { type: 'buffer' });
     let text = '';
-    workbook.SheetNames.forEach(name => {
-      const sheet = workbook.Sheets[name];
-      const csv = XLSX.utils.sheet_to_csv(sheet);
+    for (const name of wb.SheetNames) {
+      const csv = XLSX.utils.sheet_to_csv(wb.Sheets[name]);
       text += `[시트: ${name}]\n${csv}\n\n`;
-    });
-    return text;
+    }
+    return text || '[Excel 내용 없음]';
   } catch (e) {
     return `[Excel 추출 실패: ${e.message}]`;
   }
 }
 
-// PPT 텍스트 추출 (텍스트만 간단히 추출)
-async function extractPptText(buffer) {
+async function extractPptx(buf) {
   try {
-    // PPTX는 ZIP 구조 — 텍스트만 정규식으로 추출
-    const JSZip = (await import('jszip')).default;
-    const zip = await JSZip.loadAsync(buffer);
-    let text = '';
-    const slideFiles = Object.keys(zip.files)
-      .filter(f => f.match(/ppt\/slides\/slide\d+\.xml/))
-      .sort();
-
-    for (const f of slideFiles) {
-      const xml = await zip.files[f].async('text');
-      // XML 태그 제거 후 텍스트만 추출
-      const cleaned = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      const slideNum = f.match(/slide(\d+)/)?.[1] || '?';
-      text += `[슬라이드 ${slideNum}] ${cleaned}\n\n`;
-    }
-    return text || '[PPT 텍스트 없음]';
+    // PPTX = ZIP → slide XML에서 텍스트 추출
+    const { Uint8Array: UA } = globalThis;
+    // JSZip 없이 직접 ZIP 파싱 (간단 버전)
+    const str = buf.toString('utf8');
+    // XML 텍스트 노드 추출
+    const matches = str.match(/<a:t[^>]*>([^<]+)<\/a:t>/g) || [];
+    const lines = matches.map(m => m.replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+    return lines.length ? lines.join('\n') : '[PPT 텍스트 없음]';
   } catch (e) {
     return `[PPT 추출 실패: ${e.message}]`;
   }
 }
 
+// ── 메인 핸들러 ──
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, DELETE, GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, DELETE, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // 파일 목록 조회
+  // GET: 파일 목록
   if (req.method === 'GET') {
     try {
       const { blobs } = await list({ prefix: 'manuals/' });
-      const manuals = blobs.map(b => ({
-        name: b.pathname.replace('manuals/', '').replace('.meta.json', ''),
-        url: b.url,
-        size: b.size,
-        uploadedAt: b.uploadedAt,
-        pathname: b.pathname
-      })).filter(b => b.pathname.endsWith('.meta.json'));
+      const metas = blobs.filter(b => b.pathname.endsWith('.meta.json'));
+      const manuals = [];
+      for (const b of metas) {
+        try {
+          const r = await fetch(b.url);
+          const meta = await r.json();
+          manuals.push({
+            filename: meta.filename,
+            uploadedAt: meta.uploadedAt,
+            textLength: meta.textLength,
+            pathname: b.pathname
+          });
+        } catch {}
+      }
       return res.status(200).json({ manuals });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
   }
 
-  // 파일 삭제
+  // DELETE: 파일 삭제
   if (req.method === 'DELETE') {
     try {
-      const { pathname } = req.body || {};
-      if (!pathname) return res.status(400).json({ error: 'pathname 필요' });
-      // 원본 파일 + 메타 파일 삭제
+      const body = await readBody(req);
+      const { pathname } = JSON.parse(body.toString());
       await del(pathname);
-      const metaPath = pathname.replace(/\.[^.]+$/, '.meta.json');
-      try { await del(metaPath); } catch {}
+      const orig = pathname.replace('.meta.json', '');
+      try { await del(orig); } catch {}
       return res.status(200).json({ ok: true });
     } catch (e) {
       return res.status(500).json({ error: e.message });
     }
   }
 
-  // 파일 업로드
+  // POST: 파일 업로드
   if (req.method === 'POST') {
     try {
-      const parts = await parseMultipart(req);
-      const filePart = parts.find(p => p.filename);
-      if (!filePart) return res.status(400).json({ error: '파일 없음' });
+      const ct = req.headers['content-type'] || '';
+      const bMatch = ct.match(/boundary=([^\s;]+)/);
+      if (!bMatch) return res.status(400).json({ error: 'multipart boundary 없음' });
 
-      const filename = filePart.filename;
+      const body = await readBody(req);
+      const file = extractFile(body, bMatch[1]);
+      if (!file) return res.status(400).json({ error: '파일을 찾을 수 없습니다' });
+
+      const { filename, data } = file;
       const ext = filename.split('.').pop().toLowerCase();
-      const buffer = filePart.data;
 
-      // 텍스트 추출
-      let extractedText = '';
-      if (ext === 'pdf') {
-        extractedText = await extractPdfText(buffer);
-      } else if (ext === 'xlsx' || ext === 'xls') {
-        extractedText = await extractExcelText(buffer);
-      } else if (ext === 'pptx' || ext === 'ppt') {
-        extractedText = await extractPptText(buffer);
-      } else {
-        return res.status(400).json({ error: '지원 형식: PDF, Excel, PPT' });
+      // 지원 형식 확인
+      if (!['pdf','xlsx','xls','pptx','ppt'].includes(ext)) {
+        return res.status(400).json({ error: `지원하지 않는 형식: ${ext}` });
       }
 
-      // 텍스트 크기 제한 (50000자)
-      const truncated = extractedText.length > 50000
-        ? extractedText.slice(0, 50000) + '\n...[이하 생략]'
-        : extractedText;
+      // 크기 확인 (20MB)
+      if (data.length > 20 * 1024 * 1024) {
+        return res.status(400).json({ error: '20MB 초과' });
+      }
 
-      const safeFilename = filename.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
-      const timestamp = Date.now();
-      const blobPath = `manuals/${timestamp}_${safeFilename}`;
+      // 텍스트 추출
+      let text = '';
+      if (ext === 'pdf') {
+        text = await extractPdf(data);
+      } else if (['xlsx','xls'].includes(ext)) {
+        text = await extractExcel(data);
+      } else {
+        text = await extractPptx(data);
+      }
 
-      // 원본 파일 저장
-      await put(blobPath, buffer, { access: 'public' });
+      // 50000자 제한
+      if (text.length > 50000) text = text.slice(0, 50000) + '\n...[이하 생략]';
 
-      // 메타데이터(추출 텍스트 포함) 저장
+      const safe = filename.replace(/[^a-zA-Z0-9가-힣._-]/g, '_');
+      const ts = Date.now();
+      const blobPath = `manuals/${ts}_${safe}`;
+
+      // Blob에 원본 + 메타 저장
+      await put(blobPath, data, { access: 'public' });
+
       const meta = {
         filename,
         ext,
         uploadedAt: new Date().toISOString(),
-        size: buffer.length,
-        textLength: truncated.length,
-        text: truncated
+        size: data.length,
+        textLength: text.length,
+        text
       };
-      await put(blobPath.replace(/\.[^.]+$/, '.meta.json'),
-        JSON.stringify(meta), { access: 'public', contentType: 'application/json' });
+      const metaPath = `manuals/${ts}_${safe.replace(/\.[^.]+$/, '')}.meta.json`;
+      await put(metaPath, JSON.stringify(meta), {
+        access: 'public',
+        contentType: 'application/json'
+      });
 
       return res.status(200).json({
         ok: true,
         filename,
-        textLength: truncated.length,
-        preview: truncated.slice(0, 200)
+        textLength: text.length,
+        preview: text.slice(0, 300)
       });
+
     } catch (e) {
-      console.error('업로드 오류:', e);
+      console.error('Upload error:', e);
       return res.status(500).json({ error: e.message });
     }
   }
