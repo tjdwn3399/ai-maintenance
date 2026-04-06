@@ -1,0 +1,4 @@
+{
+  "name": "ai-maintenance",
+  "version": "1.0.0"
+}

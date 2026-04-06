@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HMG 아산엔진공장 · AI 설비 트러블슈팅</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#002C5F;--navy2:#00408A;--blue:#0057B8;--blue-lt:#E8F1FB;
+  --red:#C0392B;--red-lt:#FDECEA;--ora:#D97706;--ora-lt:#FEF3E2;
+  --grn:#1A7A45;--grn-lt:#E8F5EE;
+  --bg:#F2F1ED;--card:#FFFFFF;--line:#E0DED8;--line2:#CBC9C2;
+  --t1:#18170F;--t2:#4E4C46;--t3:#8A8880;--t4:#B8B5AE;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans KR',-apple-system,sans-serif;
+  --r:8px;--rl:12px;
+}
+body{background:var(--bg);font-family:var(--sans);color:var(--t1);min-height:100vh}
+header{background:var(--navy);height:50px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:50}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-badge{font-family:var(--mono);font-size:11px;letter-spacing:2px;color:#fff;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.2);border-radius:3px;padding:3px 9px}
+.logo-title{font-size:13px;font-weight:600;color:rgba(255,255,255,.88)}
+.hdr-r{display:flex;align-items:center;gap:7px}
+.ai-dot{width:6px;height:6px;border-radius:50%;background:#4ADE80;animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.ai-lbl{font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.45);letter-spacing:1px}
+
+.wrap{max-width:760px;margin:0 auto;padding:32px 18px 60px;display:flex;flex-direction:column;gap:18px}
+
+.input-card{background:var(--card);border:1px solid var(--line);border-radius:var(--rl);padding:22px;box-shadow:0 1px 4px rgba(0,0,0,.05)}
+.card-title{font-size:14px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.card-title::before{content:'';display:block;width:3px;height:15px;background:var(--navy);border-radius:2px}
+
+.sec-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:7px}
+
+.sys-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px}
+.sys-btn{font-size:11px;font-weight:600;padding:5px 12px;border-radius:5px;border:1px solid var(--line);background:#F7F6F2;color:var(--t3);cursor:pointer;transition:all .13s;font-family:var(--sans)}
+.sys-btn.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;min-height:26px}
+.chip{font-family:var(--mono);font-size:11px;padding:3px 9px;border-radius:3px;border:1px solid var(--line);background:#F7F6F2;color:var(--t2);cursor:pointer;transition:all .12s;user-select:none}
+.chip:hover{border-color:var(--blue);color:var(--blue)}
+.chip.on{border-color:var(--red);color:var(--red);background:var(--red-lt);font-weight:500}
+
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.field-full{grid-column:1/-1}
+.field{display:flex;flex-direction:column;gap:5px}
+.flbl{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--t3)}
+.req{color:var(--red)}
+.opt{font-weight:400;color:var(--t4);font-size:10px;letter-spacing:0;text-transform:none}
+
+input,select,textarea{background:#F7F6F2;border:1px solid var(--line);border-radius:6px;color:var(--t1);font-family:var(--sans);font-size:13px;outline:none;transition:border-color .15s;width:100%}
+input{padding:9px 12px;font-family:var(--mono)}
+input:focus,select:focus,textarea:focus{border-color:var(--blue);background:#fff}
+select{padding:9px 30px 9px 12px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='%238A8880'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
+textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-family:var(--sans);font-size:13px}
+
+.err{display:none;background:var(--red-lt);border:1px solid rgba(192,57,43,.25);border-radius:6px;padding:9px 13px;font-size:12px;color:var(--red);margin-bottom:8px}
+.err.show{display:block}
+
+.btn-analyze{width:100%;background:var(--navy);color:#fff;border:none;border-radius:var(--r);padding:13px;font-size:15px;font-weight:700;font-family:var(--sans);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-analyze:hover:not(:disabled){background:var(--navy2);box-shadow:0 6px 18px rgba(0,44,95,.28);transform:translateY(-1px)}
+.btn-analyze:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+/* 로딩 */
+.loading{display:none;flex-direction:column;align-items:center;gap:16px;padding:44px 0;background:var(--card);border:1px solid var(--line);border-radius:var(--rl)}
+.loading.show{display:flex}
+.spinner{width:42px;height:42px;border:2.5px solid var(--line);border-top-color:var(--navy);border-radius:50%;animation:spin .85s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ld-title{font-size:14px;font-weight:600}
+.ld-steps{display:flex;flex-direction:column;gap:8px;width:220px}
+.lstep{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t4);transition:color .25s}
+.lstep.on{color:var(--navy);font-weight:600}
+.lstep.done{color:var(--grn)}
+.ldot{width:6px;height:6px;border-radius:50%;background:var(--line2);flex-shrink:0;transition:background .25s}
+.lstep.on .ldot{background:var(--navy)}
+.lstep.done .ldot{background:var(--grn)}
+
+/* 결과 */
+.result{display:none;flex-direction:column;gap:12px}
+.result.show{display:flex}
+.btn-new{font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;border:1px solid var(--line2);color:var(--t2);background:var(--card);cursor:pointer;font-family:var(--sans);transition:all .15s;align-self:flex-start}
+.btn-new:hover{border-color:var(--navy);color:var(--navy)}
+
+.banner{background:var(--navy);border-radius:var(--rl);padding:18px 22px}
+.ban-eye{font-size:10px;font-family:var(--mono);letter-spacing:2px;color:rgba(255,255,255,.38);margin-bottom:4px}
+.ban-title{font-size:16px;font-weight:700;color:#fff;margin-bottom:6px}
+.ban-sum{font-size:13px;color:rgba(255,255,255,.65);line-height:1.7}
+.ban-badges{display:flex;gap:5px;margin-top:10px;flex-wrap:wrap}
+.bbadge{font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:4px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.55)}
+.bbadge.urg{background:rgba(192,57,43,.35);color:#FF8B7E;border:1px solid rgba(192,57,43,.4)}
+
+.sol-card{background:var(--card);border:1px solid var(--line);border-radius:var(--rl);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.sol-card.r1{border-color:rgba(0,87,184,.35)}
+.sol-head{display:flex;align-items:center;gap:11px;padding:14px 17px}
+.sol-rnk{font-family:var(--mono);font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;flex-shrink:0}
+.r1 .sol-rnk{background:var(--blue);color:#fff}
+.r2 .sol-rnk{background:#F0EFE9;color:var(--t3);border:1px solid var(--line)}
+.r3 .sol-rnk{background:#F0EFE9;color:var(--t4);border:1px solid var(--line);opacity:.8}
+.sol-info{flex:1}
+.sol-name{font-size:14px;font-weight:700}
+.r1 .sol-name{color:var(--navy)}
+.sol-sub{font-size:11px;color:var(--t3);margin-top:2px}
+.sol-pct-n{font-family:var(--mono);font-size:22px;font-weight:500;line-height:1;text-align:right}
+.r1 .sol-pct-n{color:var(--blue)}
+.r2 .sol-pct-n{color:var(--ora)}
+.r3 .sol-pct-n{color:var(--t3)}
+.sol-pct-l{font-size:10px;color:var(--t4);text-align:right;margin-top:2px}
+.pb-wrap{padding:0 17px 11px}
+.pb{height:3px;background:#ECEAE4;border-radius:2px;overflow:hidden}
+.pbf{height:100%;border-radius:2px;width:0;transition:width 1.1s cubic-bezier(.4,0,.2,1)}
+.r1 .pbf{background:var(--blue)}
+.r2 .pbf{background:var(--ora)}
+.r3 .pbf{background:var(--t3)}
+.sol-body{border-top:1px solid #F0EFE9;padding:14px 17px}
+.sol-desc{font-size:13px;color:var(--t2);line-height:1.75;margin-bottom:13px}
+.steps-lbl{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:9px}
+.steps{display:flex;flex-direction:column;gap:7px}
+.step{display:flex;gap:9px;align-items:flex-start}
+.step-n{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--line2);color:var(--t3);font-size:10px;font-family:var(--mono);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.r1 .step-n{border-color:var(--blue);color:var(--blue)}
+.step-t{font-size:13px;color:var(--t2);line-height:1.65;flex:1}
+.sol-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:11px;border-top:1px solid #F5F4F0;flex-wrap:wrap;gap:7px}
+.tags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:3px;background:#F0EFE9;color:var(--t3);border:1px solid var(--line)}
+.btn-done{font-size:12px;font-weight:600;font-family:var(--sans);padding:6px 14px;border-radius:5px;border:1.5px solid var(--navy);color:var(--navy);background:transparent;cursor:pointer;transition:all .15s}
+.btn-done:hover:not(:disabled){background:var(--navy);color:#fff}
+.btn-done.done{border-color:var(--grn);color:var(--grn);cursor:default}
+
+.parts-card{background:var(--card);border:1px solid var(--line);border-radius:var(--rl);padding:17px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.parts-title{font-size:13px;font-weight:700;margin-bottom:11px}
+.part-row{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#F7F6F2;border-radius:5px;border:1px solid var(--line);margin-bottom:5px}
+.part-row:last-child{margin-bottom:0}
+.part-nm{font-size:13px;font-weight:500}
+.part-cd{font-family:var(--mono);font-size:10px;color:var(--t3);margin-top:1px}
+.part-stk{font-size:11px;font-weight:600;padding:2px 8px;border-radius:3px}
+.ok{color:var(--grn);background:var(--grn-lt)}
+.low{color:var(--ora);background:var(--ora-lt)}
+
+.fb-row{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 17px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.fb-lbl{font-size:13px;color:var(--t2)}
+.fb-btns{display:flex;gap:7px}
+.fb-btn{font-size:12px;font-weight:600;font-family:var(--sans);padding:6px 15px;border-radius:5px;cursor:pointer;transition:all .15s}
+.fb-yes{border:1.5px solid var(--grn);color:var(--grn);background:transparent}
+.fb-yes:hover{background:var(--grn);color:#fff}
+.fb-no{border:1.5px solid var(--ora);color:var(--ora);background:transparent}
+.fb-no:hover{background:var(--ora);color:#fff}
+
+.hint{text-align:center;padding:44px 0;background:var(--card);border:1px solid var(--line);border-radius:var(--rl)}
+.hint-ico{font-size:40px;opacity:.25;margin-bottom:11px}
+.hint-t{font-size:16px;font-weight:700;color:var(--t2);margin-bottom:7px}
+.hint-d{font-size:13px;color:var(--t3);line-height:1.7}
+.hint-exs{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:14px}
+.hex{font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--line);background:#fff;color:var(--t2);cursor:pointer;transition:all .15s;font-family:var(--sans)}
+.hex:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-lt)}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
+@media(max-width:580px){.fields{grid-template-columns:1fr}.wrap{padding:18px 12px 48px}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-badge">HMG</div>
+    <div class="logo-title">아산엔진공장 · AI 설비 트러블슈팅</div>
+  </div>
+  <div class="hdr-r">
+    <div class="ai-dot"></div>
+    <span class="ai-lbl">AI ONLINE</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- 입력 카드 -->
+  <div class="input-card">
+    <div class="card-title">고장 정보 입력</div>
+
+    <div class="sec-lbl">NC / PLC 제조사</div>
+    <div class="sys-row" id="sysBtns">
+      <button class="sys-btn on" onclick="setSys(this,'siemens')">지멘스 (SINUMERIK)</button>
+      <button class="sys-btn" onclick="setSys(this,'fanuc')">FANUC</button>
+      <button class="sys-btn" onclick="setSys(this,'mitsubishi')">미쓰비시</button>
+      <button class="sys-btn" onclick="setSys(this,'common')">공통 / 기타</button>
+    </div>
+
+    <div class="sec-lbl">자주 쓰는 알람 코드</div>
+    <div class="chips" id="chips-siemens">
+      <span class="chip" onclick="pick(this,'SV410')">SV410</span>
+      <span class="chip" onclick="pick(this,'SV444')">SV444</span>
+      <span class="chip" onclick="pick(this,'SV436')">SV436</span>
+      <span class="chip" onclick="pick(this,'SV380')">SV380</span>
+      <span class="chip" onclick="pick(this,'NC700')">NC700</span>
+      <span class="chip" onclick="pick(this,'NC10650')">NC10650</span>
+      <span class="chip" onclick="pick(this,'NC16900')">NC16900</span>
+    </div>
+    <div class="chips" id="chips-fanuc" style="display:none">
+      <span class="chip" onclick="pick(this,'SV0410')">SV0410</span>
+      <span class="chip" onclick="pick(this,'SV0430')">SV0430</span>
+      <span class="chip" onclick="pick(this,'SV0435')">SV0435</span>
+      <span class="chip" onclick="pick(this,'PS0090')">PS0090</span>
+      <span class="chip" onclick="pick(this,'OT0506')">OT0506</span>
+      <span class="chip" onclick="pick(this,'AL1000')">AL1000</span>
+      <span class="chip" onclick="pick(this,'SRVO-023')">SRVO-023</span>
+    </div>
+    <div class="chips" id="chips-mitsubishi" style="display:none">
+      <span class="chip" onclick="pick(this,'E10')">E10</span>
+      <span class="chip" onclick="pick(this,'E11')">E11</span>
+      <span class="chip" onclick="pick(this,'S01')">S01</span>
+      <span class="chip" onclick="pick(this,'M7021')">M7021</span>
+      <span class="chip" onclick="pick(this,'M7030')">M7030</span>
+      <span class="chip" onclick="pick(this,'Z70')">Z70</span>
+      <span class="chip" onclick="pick(this,'Z71')">Z71</span>
+    </div>
+    <div class="chips" id="chips-common" style="display:none">
+      <span class="chip" onclick="pick(this,'비상정지')">비상정지</span>
+      <span class="chip" onclick="pick(this,'유압저압')">유압 저압</span>
+      <span class="chip" onclick="pick(this,'유압과압')">유압 과압</span>
+      <span class="chip" onclick="pick(this,'공압이상')">공압 이상</span>
+      <span class="chip" onclick="pick(this,'과열')">모터 과열</span>
+      <span class="chip" onclick="pick(this,'통신오류')">통신 오류</span>
+    </div>
+
+    <div class="fields">
+      <div class="field">
+        <label class="flbl">알람 코드 <span class="req">*</span></label>
+        <input id="iAlarm" placeholder="예: SV444, PS0090, E10" oninput="clearChips()">
+      </div>
+      <div class="field">
+        <label class="flbl">설비 유형 <span class="req">*</span></label>
+        <select id="iEquip">
+          <option value="">선택하세요</option>
+          <optgroup label="가공 설비">
+            <option>CNC 머시닝센터</option>
+            <option>CNC 선반</option>
+            <option>CNC 연삭기</option>
+            <option>호닝 머신</option>
+            <option>보링 머신</option>
+          </optgroup>
+          <optgroup label="조립 / 프레스">
+            <option>유압 프레스</option>
+            <option>너트런너 / 체결기</option>
+            <option>자동조립 시스템</option>
+          </optgroup>
+          <optgroup label="로봇 / 자동화">
+            <option>산업용 로봇 (용접)</option>
+            <option>산업용 로봇 (핸들링)</option>
+            <option>컨베이어 / 이송 시스템</option>
+          </optgroup>
+          <optgroup label="검사 / 유틸리티">
+            <option>누설 검사기</option>
+            <option>엔진 성능시험기</option>
+            <option>유압 유닛</option>
+            <option>공압 시스템</option>
+          </optgroup>
+        </select>
+      </div>
+      <div class="field field-full">
+        <label class="flbl">증상 상세 <span class="opt">(선택 — 입력할수록 정확도 향상)</span></label>
+        <textarea id="iSym" placeholder="예) X축 이동 중 알람 발생, 금속 마찰음 동반. 3일 전에도 동일 알람 1회 발생, 당시 윤활 후 복구됨."></textarea>
+      </div>
+    </div>
+
+    <div class="err" id="errBox"></div>
+    <button class="btn-analyze" id="btnRun" onclick="run()">⚡ AI 원인 분석</button>
+  </div>
+
+  <!-- 로딩 -->
+  <div class="loading" id="loadingDiv">
+    <div class="spinner"></div>
+    <div class="ld-title">AI 분석 중...</div>
+    <div class="ld-steps">
+      <div class="lstep" id="ls0"><div class="ldot"></div>알람 코드 해석</div>
+      <div class="lstep" id="ls1"><div class="ldot"></div>설비 유형 특성 분석</div>
+      <div class="lstep" id="ls2"><div class="ldot"></div>매뉴얼 및 보전이론 참조</div>
+      <div class="lstep" id="ls3"><div class="ldot"></div>원인 확률 계산</div>
+      <div class="lstep" id="ls4"><div class="ldot"></div>조치 방안 생성</div>
+    </div>
+  </div>
+
+  <!-- 초기 힌트 -->
+  <div class="hint" id="hintDiv">
+    <div class="hint-ico">🔧</div>
+    <div class="hint-t">알람 코드와 설비 유형을 입력하세요</div>
+    <div class="hint-d">지멘스 · FANUC · 미쓰비시 NC/PLC 알람,<br>유공압 · 전기 · 기계 이상까지 AI가 분석합니다.</div>
+    <div class="hint-exs">
+      <button class="hex" onclick="fillEx('sv444')">지멘스 SV444 예시</button>
+      <button class="hex" onclick="fillEx('fanuc410')">FANUC SV0410 예시</button>
+      <button class="hex" onclick="fillEx('hydraulic')">유압 압력 저하</button>
+      <button class="hex" onclick="fillEx('atc')">ATC 오류</button>
+    </div>
+  </div>
+
+  <!-- 결과 -->
+  <div class="result" id="resultDiv">
+    <button class="btn-new" onclick="resetAll()">← 새 분석</button>
+    <div class="banner" id="banner">
+      <div class="ban-eye">AI 분석 완료 · HMG 아산엔진공장 설비관리부</div>
+      <div class="ban-title" id="banTitle"></div>
+      <div class="ban-sum" id="banSum"></div>
+      <div class="ban-badges" id="banBadges"></div>
+    </div>
+    <div id="solList"></div>
+    <div class="parts-card" id="partsCard" style="display:none">
+      <div class="parts-title">🔩 권장 점검 · 교체 부품</div>
+      <div id="partsList"></div>
+    </div>
+    <div class="fb-row">
+      <div class="fb-lbl">분석이 도움이 되었나요?</div>
+      <div class="fb-btns" id="fbBtns">
+        <button class="fb-btn fb-yes" onclick="fb(true,this)">👍 도움됨</button>
+        <button class="fb-btn fb-no" onclick="fb(false,this)">👎 미흡</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SYS_LABEL = {siemens:'SINUMERIK 840D (지멘스)',fanuc:'FANUC 0i/30i',mitsubishi:'미쓰비시 MELDAS/M800',common:'공통/기타'};
+let curSys = 'siemens';
+
+function setSys(btn, sys) {
+  document.querySelectorAll('.sys-btn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  ['siemens','fanuc','mitsubishi','common'].forEach(s=>{
+    document.getElementById('chips-'+s).style.display = s===sys?'flex':'none';
+  });
+  curSys = sys;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+}
+function pick(el, code) {
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('iAlarm').value = code;
+}
+function clearChips() { document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); }
+
+const EX = {
+  sv444:{sys:'siemens',code:'SV444',equip:'CNC 머시닝센터',sym:'X축 자동가공 중 SV444 알람 발생 후 비상정지. 이송 중 금속 마찰음 동반. 3일 전에도 동일 알람 1회 발생, 당시 볼스크류 윤활 후 복구됨. 냉각수·유압 정상.'},
+  fanuc410:{sys:'fanuc',code:'SV0410',equip:'CNC 머시닝센터',sym:'Y축 서보 과전류 알람. 연속 가공 4시간 후 발생. 모터 표면 뜨거움. 팬 정상. 부하 조건 변경 없음.'},
+  hydraulic:{sys:'common',code:'유압저압',equip:'유압 프레스',sym:'유압 클램프 작동 불량. 게이지 압력 15MPa 미달(약 10MPa). 클램프 동작 느리고 힘 부족. 탱크 레벨 정상. 필터 교환 6개월 경과.'},
+  atc:{sys:'fanuc',code:'AL1000',equip:'CNC 머시닝센터',sym:'T15 공구교환 명령 시 AL1000 알람 반복. 그리퍼 동작 불량. 다른 공구는 정상. 공기압 0.5MPa 정상.'}
+};
+function fillEx(key) {
+  const ex = EX[key];
+  const map={siemens:0,fanuc:1,mitsubishi:2,common:3};
+  setSys(document.querySelectorAll('.sys-btn')[map[ex.sys]], ex.sys);
+  document.getElementById('iAlarm').value = ex.code;
+  document.getElementById('iEquip').value = ex.equip;
+  document.getElementById('iSym').value = ex.sym;
+  document.querySelectorAll('.chip').forEach(c=>{
+    if(c.textContent.trim()===ex.code) c.classList.add('on');
+  });
+}
+
+async function run() {
+  const alarm = document.getElementById('iAlarm').value.trim();
+  const equip = document.getElementById('iEquip').value;
+  const sym   = document.getElementById('iSym').value.trim();
+  if(!alarm){showErr('알람 코드를 입력해주세요.');return;}
+  if(!equip){showErr('설비 유형을 선택해주세요.');return;}
+  hideErr();
+  setUI('loading');
+
+  const STEPS=['ls0','ls1','ls2','ls3','ls4'];
+  let si=0;
+  const timer=setInterval(()=>{
+    if(si>0){const p=document.getElementById(STEPS[si-1]);p.classList.remove('on');p.classList.add('done');}
+    if(si<STEPS.length){document.getElementById(STEPS[si]).classList.add('on');si++;}
+  },700);
+
+  try {
+    const res = await fetch('/api/analyze', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({alarm, equip, sys:curSys, sym})
+    });
+    clearInterval(timer);
+    STEPS.forEach(id=>{const el=document.getElementById(id);el.classList.remove('on');el.classList.add('done');});
+    if(!res.ok) throw new Error(`서버 오류 (${res.status})`);
+    const json = await res.json();
+    if(json.error) throw new Error(json.error);
+    setUI('result');
+    render(json, alarm, equip);
+  } catch(e) {
+    clearInterval(timer);
+    setUI('input');
+    showErr('분석 중 오류: '+e.message);
+  }
+}
+
+function render(d, alarm, equip) {
+  const now = new Date().toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
+  document.getElementById('banTitle').textContent = `[${equip}] 알람 ${alarm}`;
+  document.getElementById('banSum').textContent = d.summary||'';
+  document.getElementById('banBadges').innerHTML =
+    `<span class="bbadge">${now} 완료</span>` +
+    `<span class="bbadge">${(d.solutions||[]).length}개 원인</span>` +
+    (d.urgency_flag?`<span class="bbadge urg">⚠ ${d.urgency_msg||'즉시조치'}</span>`:'');
+
+  const list=document.getElementById('solList');
+  list.innerHTML='';
+  (d.solutions||[]).forEach((sol,i)=>{
+    const rk='r'+(i+1);
+    const lbl=['1순위','2순위','3순위'][i]||`${i+1}순위`;
+    const div=document.createElement('div');
+    div.className=`sol-card ${rk}`;
+    div.style.marginBottom='10px';
+    div.innerHTML=`
+      <div class="sol-head">
+        <div class="sol-rnk">${lbl}</div>
+        <div class="sol-info">
+          <div class="sol-name">${sol.title||''}</div>
+          <div class="sol-sub">예상 복구: ${sol.est_time||'-'}</div>
+        </div>
+        <div>
+          <div class="sol-pct-n">${sol.probability||0}%</div>
+          <div class="sol-pct-l">확률</div>
+        </div>
+      </div>
+      <div class="pb-wrap"><div class="pb"><div class="pbf" id="pf${i}"></div></div></div>
+      <div class="sol-body">
+        <p class="sol-desc">${sol.description||''}</p>
+        <div class="steps-lbl">조치 순서</div>
+        <div class="steps">${(sol.steps||[]).map((s,si)=>`
+          <div class="step">
+            <div class="step-n">${si+1}</div>
+            <div class="step-t">${s}</div>
+          </div>`).join('')}
+        </div>
+        <div class="sol-foot">
+          <div class="tags">${(sol.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+          <button class="btn-done" onclick="this.textContent='✓ 완료';this.classList.add('done');this.disabled=true">조치 시작</button>
+        </div>
+      </div>`;
+    list.appendChild(div);
+    setTimeout(()=>{const el=document.getElementById('pf'+i);if(el)el.style.width=sol.probability+'%';},80+i*150);
+  });
+
+  const pc=document.getElementById('partsCard');
+  if(d.recommended_parts?.length>0){
+    pc.style.display='block';
+    document.getElementById('partsList').innerHTML=d.recommended_parts.map(p=>`
+      <div class="part-row">
+        <div><div class="part-nm">${p.name}</div><div class="part-cd">${p.code}</div></div>
+        <div class="part-stk ${p.in_stock?'ok':'low'}">${p.in_stock?'✓ 재고':'⚠ 확인'}</div>
+      </div>`).join('');
+  } else pc.style.display='none';
+}
+
+function fb(ok,btn){document.getElementById('fbBtns').innerHTML=`<span style="font-size:13px;color:#4E4C46">${ok?'👍 감사합니다!':'📝 피드백 접수됨'}</span>`;}
+
+function setUI(state){
+  document.getElementById('btnRun').disabled = state==='loading';
+  document.getElementById('loadingDiv').className = 'loading'+(state==='loading'?' show':'');
+  document.getElementById('resultDiv').className = 'result'+(state==='result'?' show':'');
+  document.getElementById('hintDiv').style.display = (state==='input')?'block':'none';
+  if(state==='loading'){
+    ['ls0','ls1','ls2','ls3','ls4'].forEach(id=>{
+      const el=document.getElementById(id);el.classList.remove('on','done');
+    });
+  }
+}
+function resetAll(){
+  setUI('input');
+  document.getElementById('iAlarm').value='';
+  document.getElementById('iEquip').value='';
+  document.getElementById('iSym').value='';
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+  document.getElementById('fbBtns').innerHTML='<button class="fb-btn fb-yes" onclick="fb(true,this)">👍 도움됨</button><button class="fb-btn fb-no" onclick="fb(false,this)">👎 미흡</button>';
+}
+function showErr(m){const e=document.getElementById('errBox');e.textContent='⚠ '+m;e.classList.add('show');}
+function hideErr(){document.getElementById('errBox').classList.remove('show');}
+</script>
+</body>
+</html>
