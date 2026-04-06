@@ -54,7 +54,7 @@ input,select,textarea{background:#F7F6F2;border:1px solid var(--line);border-rad
 input{padding:9px 12px;font-family:var(--mono)}
 input:focus,select:focus,textarea:focus{border-color:var(--blue);background:#fff}
 select{padding:9px 30px 9px 12px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='%238A8880'%3E%3Cpath d='M0 0l5 6 5-6z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 11px center}
-textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-family:var(--sans);font-size:13px}
+textarea{padding:10px 12px;resize:vertical;min-height:90px;line-height:1.7;font-family:var(--sans);font-size:13px}
 
 .err{display:none;background:var(--red-lt);border:1px solid rgba(192,57,43,.25);border-radius:6px;padding:9px 13px;font-size:12px;color:var(--red);margin-bottom:8px}
 .err.show{display:block}
@@ -63,7 +63,6 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
 .btn-analyze:hover:not(:disabled){background:var(--navy2);box-shadow:0 6px 18px rgba(0,44,95,.28);transform:translateY(-1px)}
 .btn-analyze:disabled{opacity:.45;cursor:not-allowed;transform:none}
 
-/* 로딩 */
 .loading{display:none;flex-direction:column;align-items:center;gap:16px;padding:44px 0;background:var(--card);border:1px solid var(--line);border-radius:var(--rl)}
 .loading.show{display:flex}
 .spinner{width:42px;height:42px;border:2.5px solid var(--line);border-top-color:var(--navy);border-radius:50%;animation:spin .85s linear infinite}
@@ -77,7 +76,6 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
 .lstep.on .ldot{background:var(--navy)}
 .lstep.done .ldot{background:var(--grn)}
 
-/* 결과 */
 .result{display:none;flex-direction:column;gap:12px}
 .result.show{display:flex}
 .btn-new{font-size:12px;font-weight:600;padding:7px 16px;border-radius:6px;border:1px solid var(--line2);color:var(--t2);background:var(--card);cursor:pointer;font-family:var(--sans);transition:all .15s;align-self:flex-start}
@@ -91,7 +89,7 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
 .bbadge{font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:4px;background:rgba(255,255,255,.1);color:rgba(255,255,255,.55)}
 .bbadge.urg{background:rgba(192,57,43,.35);color:#FF8B7E;border:1px solid rgba(192,57,43,.4)}
 
-.sol-card{background:var(--card);border:1px solid var(--line);border-radius:var(--rl);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+.sol-card{background:var(--card);border:1px solid var(--line);border-radius:var(--rl);overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:10px}
 .sol-card.r1{border-color:rgba(0,87,184,.35)}
 .sol-head{display:flex;align-items:center;gap:11px;padding:14px 17px}
 .sol-rnk{font-family:var(--mono);font-size:10px;font-weight:500;padding:2px 7px;border-radius:3px;flex-shrink:0}
@@ -124,9 +122,23 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
 .sol-foot{display:flex;align-items:center;justify-content:space-between;margin-top:12px;padding-top:11px;border-top:1px solid #F5F4F0;flex-wrap:wrap;gap:7px}
 .tags{display:flex;gap:4px;flex-wrap:wrap}
 .tag{font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:3px;background:#F0EFE9;color:var(--t3);border:1px solid var(--line)}
-.btn-done{font-size:12px;font-weight:600;font-family:var(--sans);padding:6px 14px;border-radius:5px;border:1.5px solid var(--navy);color:var(--navy);background:transparent;cursor:pointer;transition:all .15s}
-.btn-done:hover:not(:disabled){background:var(--navy);color:#fff}
-.btn-done.done{border-color:var(--grn);color:var(--grn);cursor:default}
+
+/* 정답 선택 버튼 */
+.btn-correct{font-size:12px;font-weight:600;font-family:var(--sans);padding:6px 14px;border-radius:5px;border:1.5px solid var(--grn);color:var(--grn);background:transparent;cursor:pointer;transition:all .15s}
+.btn-correct:hover:not(:disabled){background:var(--grn);color:#fff}
+.btn-correct.selected{background:var(--grn);color:#fff;cursor:default}
+.btn-correct.disabled-btn{border-color:var(--line2);color:var(--t4);cursor:default}
+
+/* 피드백 패널 */
+.fb-panel{background:var(--grn-lt);border:1px solid rgba(26,122,69,.25);border-radius:var(--rl);padding:16px 20px}
+.fb-panel-title{font-size:13px;font-weight:700;color:var(--grn);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.fb-panel-desc{font-size:12px;color:var(--t2);line-height:1.6}
+.fb-stats{margin-top:12px;display:flex;flex-direction:column;gap:6px}
+.fb-stat-row{display:flex;align-items:center;gap:10px;font-size:12px}
+.fb-stat-lbl{color:var(--t2);width:80px;flex-shrink:0}
+.fb-stat-bar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.fb-stat-fill{height:100%;background:var(--grn);border-radius:3px;transition:width .8s ease}
+.fb-stat-pct{font-family:var(--mono);font-size:11px;color:var(--t3);width:36px;text-align:right}
 
 .parts-card{background:var(--card);border:1px solid var(--line);border-radius:var(--rl);padding:17px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
 .parts-title{font-size:13px;font-weight:700;margin-bottom:11px}
@@ -138,15 +150,6 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
 .ok{color:var(--grn);background:var(--grn-lt)}
 .low{color:var(--ora);background:var(--ora-lt)}
 
-.fb-row{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:13px 17px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.fb-lbl{font-size:13px;color:var(--t2)}
-.fb-btns{display:flex;gap:7px}
-.fb-btn{font-size:12px;font-weight:600;font-family:var(--sans);padding:6px 15px;border-radius:5px;cursor:pointer;transition:all .15s}
-.fb-yes{border:1.5px solid var(--grn);color:var(--grn);background:transparent}
-.fb-yes:hover{background:var(--grn);color:#fff}
-.fb-no{border:1.5px solid var(--ora);color:var(--ora);background:transparent}
-.fb-no:hover{background:var(--ora);color:#fff}
-
 .hint{text-align:center;padding:44px 0;background:var(--card);border:1px solid var(--line);border-radius:var(--rl)}
 .hint-ico{font-size:40px;opacity:.25;margin-bottom:11px}
 .hint-t{font-size:16px;font-weight:700;color:var(--t2);margin-bottom:7px}
@@ -154,6 +157,10 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
 .hint-exs{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;margin-top:14px}
 .hex{font-size:12px;padding:6px 14px;border-radius:5px;border:1px solid var(--line);background:#fff;color:var(--t2);cursor:pointer;transition:all .15s;font-family:var(--sans)}
 .hex:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-lt)}
+
+/* 피드백 학습 이력 토스트 */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:#fff;padding:12px 18px;border-radius:var(--r);font-size:13px;font-weight:500;box-shadow:0 4px 16px rgba(0,0,0,.2);transform:translateY(80px);opacity:0;transition:all .3s;z-index:100}
+.toast.show{transform:translateY(0);opacity:1}
 
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
@@ -175,7 +182,6 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
 
 <div class="wrap">
 
-  <!-- 입력 카드 -->
   <div class="input-card">
     <div class="card-title">고장 정보 입력</div>
 
@@ -226,7 +232,8 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
 
     <div class="fields">
       <div class="field">
-        <label class="flbl">알람 코드 <span class="req">*</span></label>
+        <!-- 알람 코드: 선택사항 -->
+        <label class="flbl">알람 코드 <span class="opt">(선택)</span></label>
         <input id="iAlarm" placeholder="예: SV444, PS0090, E10" oninput="clearChips()">
       </div>
       <div class="field">
@@ -259,8 +266,9 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
         </select>
       </div>
       <div class="field field-full">
-        <label class="flbl">증상 상세 <span class="opt">(선택 — 입력할수록 정확도 향상)</span></label>
-        <textarea id="iSym" placeholder="예) X축 이동 중 알람 발생, 금속 마찰음 동반. 3일 전에도 동일 알람 1회 발생, 당시 윤활 후 복구됨."></textarea>
+        <!-- 증상 상세: 필수 -->
+        <label class="flbl">증상 상세 <span class="req">*</span></label>
+        <textarea id="iSym" placeholder="현장에서 관찰한 증상을 자세히 입력하세요. 예) X축 이동 중 금속 마찰음 발생 후 정지. 3일 전에도 동일 증상 1회 발생, 당시 볼스크류 윤활 후 복구됨."></textarea>
       </div>
     </div>
 
@@ -268,7 +276,6 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
     <button class="btn-analyze" id="btnRun" onclick="run()">⚡ AI 원인 분석</button>
   </div>
 
-  <!-- 로딩 -->
   <div class="loading" id="loadingDiv">
     <div class="spinner"></div>
     <div class="ld-title">AI 분석 중...</div>
@@ -276,16 +283,15 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
       <div class="lstep" id="ls0"><div class="ldot"></div>알람 코드 해석</div>
       <div class="lstep" id="ls1"><div class="ldot"></div>설비 유형 특성 분석</div>
       <div class="lstep" id="ls2"><div class="ldot"></div>매뉴얼 및 보전이론 참조</div>
-      <div class="lstep" id="ls3"><div class="ldot"></div>원인 확률 계산</div>
+      <div class="lstep" id="ls3"><div class="ldot"></div>과거 피드백 이력 반영</div>
       <div class="lstep" id="ls4"><div class="ldot"></div>조치 방안 생성</div>
     </div>
   </div>
 
-  <!-- 초기 힌트 -->
   <div class="hint" id="hintDiv">
     <div class="hint-ico">🔧</div>
-    <div class="hint-t">알람 코드와 설비 유형을 입력하세요</div>
-    <div class="hint-d">지멘스 · FANUC · 미쓰비시 NC/PLC 알람,<br>유공압 · 전기 · 기계 이상까지 AI가 분석합니다.</div>
+    <div class="hint-t">설비 유형과 증상을 입력하세요</div>
+    <div class="hint-d">알람 코드는 선택사항 — 증상만으로도 분석 가능합니다.<br>지멘스 · FANUC · 미쓰비시 NC/PLC 알람, 유공압 · 전기 · 기계 이상까지 AI가 분석합니다.</div>
     <div class="hint-exs">
       <button class="hex" onclick="fillEx('sv444')">지멘스 SV444 예시</button>
       <button class="hex" onclick="fillEx('fanuc410')">FANUC SV0410 예시</button>
@@ -294,7 +300,6 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
     </div>
   </div>
 
-  <!-- 결과 -->
   <div class="result" id="resultDiv">
     <button class="btn-new" onclick="resetAll()">← 새 분석</button>
     <div class="banner" id="banner">
@@ -308,20 +313,67 @@ textarea{padding:10px 12px;resize:vertical;min-height:80px;line-height:1.7;font-
       <div class="parts-title">🔩 권장 점검 · 교체 부품</div>
       <div id="partsList"></div>
     </div>
-    <div class="fb-row">
-      <div class="fb-lbl">분석이 도움이 되었나요?</div>
-      <div class="fb-btns" id="fbBtns">
-        <button class="fb-btn fb-yes" onclick="fb(true,this)">👍 도움됨</button>
-        <button class="fb-btn fb-no" onclick="fb(false,this)">👎 미흡</button>
-      </div>
+    <!-- 피드백 결과 패널 -->
+    <div class="fb-panel" id="fbPanel" style="display:none">
+      <div class="fb-panel-title">✅ 피드백 반영 완료</div>
+      <div class="fb-panel-desc" id="fbPanelDesc"></div>
+      <div class="fb-stats" id="fbStats"></div>
     </div>
   </div>
 
 </div>
 
+<div class="toast" id="toast"></div>
+
 <script>
+// ── 피드백 학습 데이터 (localStorage에 저장) ──
+function getFeedbackDB() {
+  try { return JSON.parse(localStorage.getItem('hmg_feedback') || '{}'); }
+  catch { return {}; }
+}
+function saveFeedbackDB(db) {
+  localStorage.setItem('hmg_feedback', JSON.stringify(db));
+}
+
+// 피드백 키: 알람코드 + 설비유형 조합
+function getFeedbackKey(alarm, equip) {
+  return `${alarm||'noalarm'}_${equip}`.replace(/\s/g,'_');
+}
+
+// 피드백 저장
+function saveFeedback(alarm, equip, correctRank, correctTitle) {
+  const db = getFeedbackDB();
+  const key = getFeedbackKey(alarm, equip);
+  if (!db[key]) db[key] = { total: 0, ranks: {}, titles: {} };
+  db[key].total++;
+  db[key].ranks[correctRank] = (db[key].ranks[correctRank] || 0) + 1;
+  db[key].titles[correctTitle] = (db[key].titles[correctTitle] || 0) + 1;
+  saveFeedbackDB(db);
+  return db[key];
+}
+
+// 피드백 컨텍스트 문자열 생성 (프롬프트에 삽입)
+function getFeedbackContext(alarm, equip) {
+  const db = getFeedbackDB();
+  const key = getFeedbackKey(alarm, equip);
+  const data = db[key];
+  if (!data || data.total === 0) return '';
+
+  const sortedTitles = Object.entries(data.titles)
+    .sort((a,b) => b[1]-a[1])
+    .map(([title, cnt]) => `"${title}" (${cnt}회 정답)`)
+    .join(', ');
+
+  const rank1cnt = data.ranks['1'] || 0;
+  const accuracy = Math.round(rank1cnt / data.total * 100);
+
+  return `\n\n[과거 피드백 데이터 - 동일 알람+설비 조합 ${data.total}건]\n실제 정답이었던 원인: ${sortedTitles}\n1순위 적중률: ${accuracy}%\n→ 과거 정답 원인을 높은 확률로 우선 배치하세요.`;
+}
+
+// ── 제조사 전환 ──
 const SYS_LABEL = {siemens:'SINUMERIK 840D (지멘스)',fanuc:'FANUC 0i/30i',mitsubishi:'미쓰비시 MELDAS/M800',common:'공통/기타'};
 let curSys = 'siemens';
+let lastAlarm = '', lastEquip = '';
 
 function setSys(btn, sys) {
   document.querySelectorAll('.sys-btn').forEach(b=>b.classList.remove('on'));
@@ -339,10 +391,11 @@ function pick(el, code) {
 }
 function clearChips() { document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on')); }
 
+// ── 예시 ──
 const EX = {
   sv444:{sys:'siemens',code:'SV444',equip:'CNC 머시닝센터',sym:'X축 자동가공 중 SV444 알람 발생 후 비상정지. 이송 중 금속 마찰음 동반. 3일 전에도 동일 알람 1회 발생, 당시 볼스크류 윤활 후 복구됨. 냉각수·유압 정상.'},
   fanuc410:{sys:'fanuc',code:'SV0410',equip:'CNC 머시닝센터',sym:'Y축 서보 과전류 알람. 연속 가공 4시간 후 발생. 모터 표면 뜨거움. 팬 정상. 부하 조건 변경 없음.'},
-  hydraulic:{sys:'common',code:'유압저압',equip:'유압 프레스',sym:'유압 클램프 작동 불량. 게이지 압력 15MPa 미달(약 10MPa). 클램프 동작 느리고 힘 부족. 탱크 레벨 정상. 필터 교환 6개월 경과.'},
+  hydraulic:{sys:'common',code:'',equip:'유압 프레스',sym:'유압 클램프 작동 불량. 게이지 압력 15MPa 미달(약 10MPa). 클램프 동작 느리고 힘 부족. 탱크 레벨 정상. 필터 교환 6개월 경과.'},
   atc:{sys:'fanuc',code:'AL1000',equip:'CNC 머시닝센터',sym:'T15 공구교환 명령 시 AL1000 알람 반복. 그리퍼 동작 불량. 다른 공구는 정상. 공기압 0.5MPa 정상.'}
 };
 function fillEx(key) {
@@ -352,18 +405,25 @@ function fillEx(key) {
   document.getElementById('iAlarm').value = ex.code;
   document.getElementById('iEquip').value = ex.equip;
   document.getElementById('iSym').value = ex.sym;
-  document.querySelectorAll('.chip').forEach(c=>{
+  if(ex.code) document.querySelectorAll('.chip').forEach(c=>{
     if(c.textContent.trim()===ex.code) c.classList.add('on');
   });
 }
 
+// ── 메인 분석 ──
 async function run() {
   const alarm = document.getElementById('iAlarm').value.trim();
   const equip = document.getElementById('iEquip').value;
   const sym   = document.getElementById('iSym').value.trim();
-  if(!alarm){showErr('알람 코드를 입력해주세요.');return;}
+
+  // 유효성: 설비유형 + 증상 필수, 알람코드 선택
   if(!equip){showErr('설비 유형을 선택해주세요.');return;}
+  if(!sym){showErr('증상 상세를 입력해주세요. (필수 항목)');return;}
   hideErr();
+
+  lastAlarm = alarm;
+  lastEquip = equip;
+
   setUI('loading');
 
   const STEPS=['ls0','ls1','ls2','ls3','ls4'];
@@ -373,11 +433,14 @@ async function run() {
     if(si<STEPS.length){document.getElementById(STEPS[si]).classList.add('on');si++;}
   },700);
 
+  // 피드백 컨텍스트 첨부
+  const fbCtx = getFeedbackContext(alarm, equip);
+
   try {
     const res = await fetch('/api/analyze', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({alarm, equip, sys:curSys, sym})
+      body: JSON.stringify({alarm, equip, sys:curSys, sym, feedbackContext: fbCtx})
     });
     clearInterval(timer);
     STEPS.forEach(id=>{const el=document.getElementById(id);el.classList.remove('on');el.classList.add('done');});
@@ -393,14 +456,18 @@ async function run() {
   }
 }
 
+// ── 결과 렌더링 ──
 function render(d, alarm, equip) {
   const now = new Date().toLocaleTimeString('ko-KR',{hour12:false,hour:'2-digit',minute:'2-digit'});
-  document.getElementById('banTitle').textContent = `[${equip}] 알람 ${alarm}`;
+  const titleStr = alarm ? `[${equip}] 알람 ${alarm}` : `[${equip}] 증상 분석`;
+  document.getElementById('banTitle').textContent = titleStr;
   document.getElementById('banSum').textContent = d.summary||'';
   document.getElementById('banBadges').innerHTML =
     `<span class="bbadge">${now} 완료</span>` +
     `<span class="bbadge">${(d.solutions||[]).length}개 원인</span>` +
     (d.urgency_flag?`<span class="bbadge urg">⚠ ${d.urgency_msg||'즉시조치'}</span>`:'');
+
+  document.getElementById('fbPanel').style.display = 'none';
 
   const list=document.getElementById('solList');
   list.innerHTML='';
@@ -409,7 +476,6 @@ function render(d, alarm, equip) {
     const lbl=['1순위','2순위','3순위'][i]||`${i+1}순위`;
     const div=document.createElement('div');
     div.className=`sol-card ${rk}`;
-    div.style.marginBottom='10px';
     div.innerHTML=`
       <div class="sol-head">
         <div class="sol-rnk">${lbl}</div>
@@ -434,7 +500,10 @@ function render(d, alarm, equip) {
         </div>
         <div class="sol-foot">
           <div class="tags">${(sol.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
-          <button class="btn-done" onclick="this.textContent='✓ 완료';this.classList.add('done');this.disabled=true">조치 시작</button>
+          <button class="btn-correct" id="correct-btn-${i}"
+            onclick="markCorrect(${i}, '${(sol.title||'').replace(/'/g,"\\'")}', ${i+1})">
+            ✓ 정답이었어요
+          </button>
         </div>
       </div>`;
     list.appendChild(div);
@@ -452,8 +521,54 @@ function render(d, alarm, equip) {
   } else pc.style.display='none';
 }
 
-function fb(ok,btn){document.getElementById('fbBtns').innerHTML=`<span style="font-size:13px;color:#4E4C46">${ok?'👍 감사합니다!':'📝 피드백 접수됨'}</span>`;}
+// ── 정답 선택 & 피드백 저장 ──
+function markCorrect(idx, title, rank) {
+  // 모든 버튼 비활성화
+  document.querySelectorAll('.btn-correct').forEach((btn, i) => {
+    if(i === idx) {
+      btn.textContent = '✅ 정답!';
+      btn.classList.add('selected');
+    } else {
+      btn.classList.add('disabled-btn');
+    }
+    btn.disabled = true;
+  });
 
+  // 피드백 저장
+  const data = saveFeedback(lastAlarm, lastEquip, rank, title);
+
+  // 피드백 패널 표시
+  const panel = document.getElementById('fbPanel');
+  panel.style.display = 'block';
+
+  const sortedTitles = Object.entries(data.titles).sort((a,b)=>b[1]-a[1]);
+  const statsHtml = sortedTitles.map(([t, cnt]) => {
+    const pct = Math.round(cnt / data.total * 100);
+    return `<div class="fb-stat-row">
+      <span class="fb-stat-lbl">${t}</span>
+      <div class="fb-stat-bar"><div class="fb-stat-fill" style="width:${pct}%"></div></div>
+      <span class="fb-stat-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+
+  document.getElementById('fbPanelDesc').textContent =
+    `"${title}" (${rank}순위)이 정답으로 기록됐어요. 동일한 알람+설비 조합으로 다음에 분석할 때 이 원인을 우선 고려합니다.`;
+  document.getElementById('fbStats').innerHTML =
+    `<div style="font-size:11px;color:var(--t3);margin-bottom:6px">누적 ${data.total}건의 피드백 기반 원인 분포</div>${statsHtml}`;
+
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  showToast(`✅ "${title}" 정답 기록 완료! 다음 분석에 반영됩니다.`);
+}
+
+// ── 토스트 ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ── UI 유틸 ──
 function setUI(state){
   document.getElementById('btnRun').disabled = state==='loading';
   document.getElementById('loadingDiv').className = 'loading'+(state==='loading'?' show':'');
@@ -471,7 +586,6 @@ function resetAll(){
   document.getElementById('iEquip').value='';
   document.getElementById('iSym').value='';
   document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
-  document.getElementById('fbBtns').innerHTML='<button class="fb-btn fb-yes" onclick="fb(true,this)">👍 도움됨</button><button class="fb-btn fb-no" onclick="fb(false,this)">👎 미흡</button>';
 }
 function showErr(m){const e=document.getElementById('errBox');e.textContent='⚠ '+m;e.classList.add('show');}
 function hideErr(){document.getElementById('errBox').classList.remove('show');}
