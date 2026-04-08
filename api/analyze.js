@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
-  const { alarm, equip, sys, sym, feedbackContext } = req.body;
+  const { alarm, equip, sys, sym, feedbackContext, imageBase64, imageMimeType } = req.body;
 
   const SYS_LABEL = {
     siemens: 'SINUMERIK 840D/840Dsl (지멘스)',
@@ -124,7 +124,16 @@ ${alarmStr}
         model: 'claude-sonnet-4-20250514',
         max_tokens: 4096,
         system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: userContent }]
+        messages: [{
+          role: 'user',
+          content: imageBase64 ? [
+            {
+              type: 'image',
+              source: { type: 'base64', media_type: imageMimeType || 'image/jpeg', data: imageBase64 }
+            },
+            { type: 'text', text: userContent }
+          ] : userContent
+        }]
       })
     });
 

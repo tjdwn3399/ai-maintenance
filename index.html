@@ -216,6 +216,24 @@ textarea{padding:10px 12px;resize:vertical;min-height:90px;line-height:1.7;font-
 ::-webkit-scrollbar-thumb{background:var(--line2);border-radius:2px}
 @media print{header,.btn-new,.btn-print,.btn-correct,.hist-toggle,.hint{display:none!important}.result{display:flex!important}}
 @media(max-width:580px){.fields{grid-template-columns:1fr}.layout{padding:16px 12px 48px}.sys-row{gap:3px}.sys-btn{font-size:11px;padding:5px 10px}}
+
+/* ── 음성/사진 버튼 ── */
+.sym-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.sym-btns{display:flex;gap:6px}
+.sym-btn{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;font-family:var(--sans);padding:5px 11px;border-radius:5px;border:1px solid var(--line2);background:#F7F6F2;color:var(--t2);cursor:pointer;transition:all .15s;white-space:nowrap}
+.sym-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-lt)}
+.sym-btn.recording{border-color:var(--red);color:var(--red);background:var(--red-lt);animation:pulse 1s infinite}
+.sym-btn.processing{border-color:var(--ora);color:var(--ora);background:var(--ora-lt);cursor:not-allowed}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.sym-btn-ico{font-size:13px}
+.img-preview{display:none;margin-top:8px;border-radius:6px;overflow:hidden;border:1px solid var(--line);position:relative}
+.img-preview.show{display:block}
+.img-preview img{width:100%;max-height:200px;object-fit:cover;display:block}
+.img-preview-bar{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:#F7F6F2;border-top:1px solid var(--line)}
+.img-preview-name{font-size:11px;color:var(--t3);font-family:var(--mono)}
+.img-preview-del{font-size:11px;color:var(--red);cursor:pointer;font-weight:600;background:none;border:none;font-family:var(--sans)}
+.voice-status{font-size:11px;color:var(--red);margin-left:4px;display:none}
+.voice-status.show{display:inline}
 </style>
 </head>
 <body>
@@ -289,8 +307,28 @@ textarea{padding:10px 12px;resize:vertical;min-height:90px;line-height:1.7;font-
         </select>
       </div>
       <div class="field field-full">
-        <label class="flbl">증상 상세 <span class="req">*</span></label>
+        <div class="sym-toolbar">
+          <label class="flbl">증상 상세 <span class="req">*</span></label>
+          <div class="sym-btns">
+            <button type="button" class="sym-btn" id="voiceBtn" onclick="toggleVoice()" title="음성으로 증상 입력">
+              <span class="sym-btn-ico">🎤</span> 음성 입력
+              <span class="voice-status" id="voiceStatus">● 녹음 중</span>
+            </button>
+            <button type="button" class="sym-btn" id="imgBtn" onclick="document.getElementById('imgFileInput').click()" title="사진으로 알람/증상 인식">
+              <span class="sym-btn-ico">📷</span> 사진 인식
+            </button>
+            <input type="file" id="imgFileInput" accept="image/*" capture="environment" style="display:none" onchange="handleImage(this)">
+          </div>
+        </div>
         <textarea id="iSym" placeholder="현장에서 관찰한 증상을 자세히 입력하세요.&#10;예) X축 이동 중 금속 마찰음 발생 후 정지. 3일 전에도 동일 증상 발생, 당시 볼스크류 윤활 후 복구됨." oninput="onSymInput()"></textarea>
+        <!-- 이미지 미리보기 -->
+        <div class="img-preview" id="imgPreview">
+          <img id="imgPreviewImg" src="" alt="업로드 이미지">
+          <div class="img-preview-bar">
+            <span class="img-preview-name" id="imgPreviewName"></span>
+            <button class="img-preview-del" onclick="clearImage()">✕ 제거</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -530,7 +568,7 @@ async function run(){
   try{
     const res=await fetch('/api/analyze',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({alarm,equip,sys:curSys,sym,feedbackContext:fbCtx})
+      body:JSON.stringify({alarm,equip,sys:curSys,sym,feedbackContext:fbCtx,imageBase64:uploadedImageBase64,imageMimeType:uploadedImageType})
     });
     clearInterval(timer);
     STEPS.forEach(id=>{const el=document.getElementById(id);el.classList.remove('on');el.classList.add('done');});
@@ -671,6 +709,159 @@ function resetAll(){
   document.getElementById('urgBadge').className='urg-badge';
   document.getElementById('simHint').classList.remove('show');
 }
+
+// ━━━ 음성 입력 ━━━
+let recognition = null;
+let isRecording = false;
+
+function toggleVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    showToast('⚠ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome을 사용해주세요.');
+    return;
+  }
+  if (isRecording) {
+    stopVoice();
+  } else {
+    startVoice();
+  }
+}
+
+function startVoice() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SpeechRecognition();
+  recognition.lang = 'ko-KR';
+  recognition.continuous = true;
+  recognition.interimResults = true;
+
+  const btn = document.getElementById('voiceBtn');
+  const status = document.getElementById('voiceStatus');
+  const textarea = document.getElementById('iSym');
+  const existingText = textarea.value;
+
+  recognition.onstart = () => {
+    isRecording = true;
+    btn.classList.add('recording');
+    status.classList.add('show');
+    btn.querySelector('.sym-btn-ico').textContent = '⏹';
+    showToast('🎤 음성 인식 시작 — 증상을 말씀해주세요.');
+  };
+
+  let finalText = existingText;
+  recognition.onresult = (e) => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) {
+        finalText += (finalText ? ' ' : '') + e.results[i][0].transcript;
+      } else {
+        interim = e.results[i][0].transcript;
+      }
+    }
+    textarea.value = finalText + (interim ? ' ' + interim : '');
+    onSymInput();
+  };
+
+  recognition.onerror = (e) => {
+    if (e.error === 'not-allowed') {
+      showToast('⚠ 마이크 권한이 필요합니다. 브라우저 설정에서 허용해주세요.');
+    } else if (e.error !== 'aborted') {
+      showToast('⚠ 음성 인식 오류: ' + e.error);
+    }
+    stopVoice();
+  };
+
+  recognition.onend = () => { stopVoice(); };
+  recognition.start();
+}
+
+function stopVoice() {
+  isRecording = false;
+  const btn = document.getElementById('voiceBtn');
+  const status = document.getElementById('voiceStatus');
+  btn.classList.remove('recording');
+  status.classList.remove('show');
+  btn.querySelector('.sym-btn-ico').textContent = '🎤';
+  if (recognition) { try { recognition.stop(); } catch {} recognition = null; }
+  showToast('🎤 음성 입력 완료.');
+}
+
+// ━━━ 이미지 인식 ━━━
+let uploadedImageBase64 = null;
+let uploadedImageType = null;
+
+function handleImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) {
+    showToast('⚠ 이미지 크기가 5MB를 초과합니다.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const base64 = e.target.result.split(',')[1];
+    const mimeType = file.type || 'image/jpeg';
+    uploadedImageBase64 = base64;
+    uploadedImageType = mimeType;
+
+    // 미리보기
+    document.getElementById('imgPreviewImg').src = e.target.result;
+    document.getElementById('imgPreviewName').textContent = file.name;
+    document.getElementById('imgPreview').classList.add('show');
+
+    // AI 이미지 분석
+    const btn = document.getElementById('imgBtn');
+    btn.classList.add('processing');
+    btn.querySelector('.sym-btn-ico').textContent = '⏳';
+    btn.querySelector('span:last-child') && (btn.lastChild.textContent = '');
+    // 텍스트 노드 업데이트
+    btn.childNodes.forEach(n => { if(n.nodeType === 3) n.textContent = ' 분석 중...'; });
+    showToast('📷 이미지 분석 중...');
+
+    try {
+      const result = await analyzeImage(base64, mimeType);
+      if (result) {
+        const textarea = document.getElementById('iSym');
+        const existing = textarea.value.trim();
+        textarea.value = existing ? existing + '
+
+[이미지 분석]
+' + result : '[이미지 분석]
+' + result;
+        onSymInput();
+        showToast('✅ 이미지 분석 완료! 증상 상세란에 추가됐습니다.');
+      }
+    } catch(err) {
+      showToast('⚠ 이미지 분석 실패: ' + err.message);
+    } finally {
+      btn.classList.remove('processing');
+      btn.querySelector('.sym-btn-ico').textContent = '📷';
+      btn.childNodes.forEach(n => { if(n.nodeType === 3) n.textContent = ' 사진 인식'; });
+    }
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeImage(base64, mimeType) {
+  const res = await fetch('/api/analyze-image', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ image: base64, mimeType })
+  });
+  if (!res.ok) throw new Error('서버 오류 ' + res.status);
+  const data = await res.json();
+  if (data.error) throw new Error(data.error);
+  return data.result;
+}
+
+function clearImage() {
+  uploadedImageBase64 = null;
+  uploadedImageType = null;
+  document.getElementById('imgPreview').classList.remove('show');
+  document.getElementById('imgPreviewImg').src = '';
+  document.getElementById('imgFileInput').value = '';
+}
+
+
 function logout(){
   if(confirm('로그아웃 하시겠습니까?')){
     sessionStorage.removeItem('hmg_auth');
