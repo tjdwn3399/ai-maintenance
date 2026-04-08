@@ -397,6 +397,12 @@ textarea{padding:10px 12px;resize:vertical;min-height:90px;line-height:1.7;font-
 <div class="toast" id="toast"></div>
 
 <script>
+// ━━━ 전역 변수 ━━━
+let uploadedImageBase64 = null;
+let uploadedImageType = null;
+let recognition = null;
+let isRecording = false;
+
 // ━━━ 피드백 DB (localStorage) ━━━
 function getDB(){try{return JSON.parse(localStorage.getItem('hmg_fb')||'{}')}catch{return{}}}
 function saveDB(db){localStorage.setItem('hmg_fb',JSON.stringify(db))}
@@ -711,9 +717,6 @@ function resetAll(){
 }
 
 // ━━━ 음성 입력 ━━━
-let recognition = null;
-let isRecording = false;
-
 function toggleVoice() {
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     showToast('⚠ 이 브라우저는 음성 인식을 지원하지 않습니다. Chrome을 사용해주세요.');
@@ -785,9 +788,6 @@ function stopVoice() {
 }
 
 // ━━━ 이미지 인식 ━━━
-let uploadedImageBase64 = null;
-let uploadedImageType = null;
-
 function handleImage(input) {
   const file = input.files[0];
   if (!file) return;
@@ -812,8 +812,6 @@ function handleImage(input) {
     const btn = document.getElementById('imgBtn');
     btn.classList.add('processing');
     btn.querySelector('.sym-btn-ico').textContent = '⏳';
-    btn.querySelector('span:last-child') && (btn.lastChild.textContent = '');
-    // 텍스트 노드 업데이트
     btn.childNodes.forEach(n => { if(n.nodeType === 3) n.textContent = ' 분석 중...'; });
     showToast('📷 이미지 분석 중...');
 
@@ -822,12 +820,7 @@ function handleImage(input) {
       if (result) {
         const textarea = document.getElementById('iSym');
         const existing = textarea.value.trim();
-        textarea.value = existing ? existing + '
-
-[이미지 분석]
-' + result : '[이미지 분석]
-' + result;
-        onSymInput();
+        textarea.value = existing ? existing + `\n\n[이미지 분석]\n${result}` : `[이미지 분석]\n${result}`;nput();
         showToast('✅ 이미지 분석 완료! 증상 상세란에 추가됐습니다.');
       }
     } catch(err) {
@@ -836,6 +829,7 @@ function handleImage(input) {
       btn.classList.remove('processing');
       btn.querySelector('.sym-btn-ico').textContent = '📷';
       btn.childNodes.forEach(n => { if(n.nodeType === 3) n.textContent = ' 사진 인식'; });
+      input.value = '';
     }
   };
   reader.readAsDataURL(file);
