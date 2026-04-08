@@ -278,29 +278,14 @@ textarea{padding:10px 12px;resize:vertical;min-height:90px;line-height:1.7;font-
         <label class="flbl">설비 유형 <span class="req">*</span></label>
         <select id="iEquip" onchange="onEquipChange()">
           <option value="">선택하세요</option>
-          <optgroup label="가공 설비">
-            <option>CNC 머시닝센터</option>
-            <option>CNC 선반</option>
-            <option>CNC 연삭기</option>
-            <option>호닝 머신</option>
-            <option>보링 머신</option>
-          </optgroup>
-          <optgroup label="조립 / 프레스">
-            <option>유압 프레스</option>
-            <option>너트런너 / 체결기</option>
-            <option>자동조립 시스템</option>
-          </optgroup>
-          <optgroup label="로봇 / 자동화">
-            <option>산업용 로봇 (용접)</option>
-            <option>산업용 로봇 (핸들링)</option>
-            <option>컨베이어 / 이송 시스템</option>
-          </optgroup>
-          <optgroup label="검사 / 유틸리티">
-            <option>누설 검사기</option>
-            <option>엔진 성능시험기</option>
-            <option>유압 유닛</option>
-            <option>공압 시스템</option>
-          </optgroup>
+          <option value="가공기 (MCC/선반/밀러 등)">가공기 (MCC/선반/밀러 등)</option>
+          <option value="너트런너">너트런너</option>
+          <option value="서보프레스">서보프레스</option>
+          <option value="콜드테스터">콜드테스터</option>
+          <option value="리크테스터">리크테스터</option>
+          <option value="로봇">로봇</option>
+          <option value="PC">PC</option>
+          <option value="그 외">그 외</option>
         </select>
       </div>
       <div class="field field-full">
@@ -608,7 +593,13 @@ function render(d,alarm,equip){
         </div>
         <div class="steps" data-sol="${i}">${stepsHtml}</div>
         <div class="sol-foot">
-          <div class="tags">${(sol.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+          <div style="display:flex;flex-direction:column;gap:5px;flex:1;min-width:0">
+            <div class="tags">${(sol.tags||[]).map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+            ${(sol.sources&&sol.sources.length)?`<div style="display:flex;align-items:center;gap:4px;flex-wrap:wrap">
+              <span style="font-size:10px;font-family:var(--mono);color:var(--t3)">출처</span>
+              ${sol.sources.map(s=>`<span style="font-size:10px;padding:1px 7px;border-radius:3px;background:#EEF2F7;color:#0057B8;border:1px solid rgba(0,87,184,.2)">${s}</span>`).join('')}
+            </div>`:''}
+          </div>
           <button class="btn-correct" id="cb${i}" onclick="markCorrect(${i},'${(sol.title||'').replace(/'/g,"\\'")}',${i+1})">✓ 정답이었어요</button>
         </div>
       </div>`;
