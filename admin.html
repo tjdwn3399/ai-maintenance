@@ -80,12 +80,20 @@ header{background:var(--navy);height:50px;display:flex;align-items:center;justif
 </style>
 </head>
 <body>
+<script>
+(function(){
+  if(!sessionStorage.getItem('hmg_auth')){
+    location.href='/login.html';
+  }
+})();
+</script>
 
 <header>
   <div class="logo">
     <div class="logo-badge">HMG</div>
     <div class="logo-title">아산엔진공장 · 매뉴얼 관리</div>
   </div>
+  <button onclick="if(confirm('로그아웃 하시겠습니까?')){sessionStorage.removeItem('hmg_auth');location.href='/login.html';}" style="font-size:12px;font-weight:600;color:rgba(255,255,255,.6);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:5px 12px;cursor:pointer;font-family:var(--sans);margin-right:8px">로그아웃</button>
   <a href="/" class="back-btn">← 트러블슈팅으로</a>
 </header>
 

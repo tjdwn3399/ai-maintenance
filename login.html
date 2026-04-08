@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HMG 아산엔진공장 · 로그인</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --navy:#002C5F;--navy2:#00408A;--blue:#0057B8;--blue-lt:#E8F1FB;
+  --red:#C0392B;--red-lt:#FDECEA;--line:#E0DED8;
+  --bg:#F2F1ED;--card:#fff;
+  --t1:#18170F;--t2:#4E4C46;--t3:#8A8880;
+  --mono:'DM Mono',monospace;--sans:'Noto Sans KR',-apple-system,sans-serif;
+}
+body{
+  background:var(--bg);font-family:var(--sans);color:var(--t1);
+  min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:20px;
+}
+
+/* 배경 패턴 */
+body::before{
+  content:'';position:fixed;inset:0;
+  background:repeating-linear-gradient(
+    45deg,transparent,transparent 40px,rgba(0,44,95,.015) 40px,rgba(0,44,95,.015) 80px
+  );
+  pointer-events:none;
+}
+
+.login-wrap{
+  width:100%;max-width:400px;
+  display:flex;flex-direction:column;align-items:center;gap:24px;
+}
+
+/* 로고 영역 */
+.logo-area{text-align:center}
+.hmg-badge{
+  display:inline-block;
+  font-family:var(--mono);font-size:13px;letter-spacing:3px;
+  color:#fff;background:var(--navy);
+  padding:6px 16px;border-radius:4px;margin-bottom:14px;
+}
+.logo-title{font-size:18px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.logo-sub{font-size:13px;color:var(--t3)}
+
+/* 로그인 카드 */
+.login-card{
+  width:100%;background:var(--card);
+  border:1px solid var(--line);border-radius:12px;
+  padding:32px 28px;
+  box-shadow:0 4px 24px rgba(0,44,95,.08);
+}
+
+.card-title{
+  font-size:15px;font-weight:700;color:var(--t1);
+  margin-bottom:24px;display:flex;align-items:center;gap:8px;
+}
+.card-title::before{
+  content:'';display:block;width:3px;height:16px;
+  background:var(--navy);border-radius:2px;
+}
+
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.flbl{font-size:11px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--t3)}
+
+input{
+  background:#F7F6F2;border:1px solid var(--line);
+  border-radius:7px;color:var(--t1);
+  font-family:var(--mono);font-size:14px;
+  padding:11px 14px;outline:none;
+  transition:border-color .15s,background .15s;width:100%;
+  letter-spacing:.5px;
+}
+input:focus{border-color:var(--blue);background:#fff}
+input::placeholder{color:#C0BDB5;letter-spacing:0;font-family:var(--sans);font-size:13px}
+
+.err-msg{
+  display:none;background:var(--red-lt);border:1px solid rgba(192,57,43,.2);
+  border-radius:6px;padding:9px 12px;font-size:12px;color:var(--red);margin-bottom:12px;
+}
+.err-msg.show{display:block}
+
+.btn-login{
+  width:100%;background:var(--navy);color:#fff;
+  border:none;border-radius:7px;padding:13px;
+  font-size:14px;font-weight:700;font-family:var(--sans);
+  cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  margin-top:4px;
+}
+.btn-login:hover:not(:disabled){background:var(--navy2);transform:translateY(-1px);box-shadow:0 6px 18px rgba(0,44,95,.25)}
+.btn-login:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* 로딩 스피너 */
+.spin{
+  width:16px;height:16px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:#fff;border-radius:50%;
+  animation:spin .7s linear infinite;display:none;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* 푸터 */
+.login-footer{font-size:11px;color:var(--t3);text-align:center;line-height:1.7}
+
+/* 엔터키 효과 */
+input:focus{box-shadow:0 0 0 3px rgba(0,87,184,.1)}
+</style>
+</head>
+<body>
+
+<div class="login-wrap">
+
+  <div class="logo-area">
+    <div class="hmg-badge">HMG</div>
+    <div class="logo-title">아산엔진공장 설비관리부</div>
+    <div class="logo-sub">AI 설비 트러블슈팅 시스템</div>
+  </div>
+
+  <div class="login-card">
+    <div class="card-title">로그인</div>
+
+    <div class="field">
+      <label class="flbl">아이디</label>
+      <input id="iId" type="text" placeholder="아이디를 입력하세요" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('iPw').focus()">
+    </div>
+
+    <div class="field">
+      <label class="flbl">비밀번호</label>
+      <input id="iPw" type="password" placeholder="비밀번호를 입력하세요" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+
+    <div class="err-msg" id="errMsg"></div>
+
+    <button class="btn-login" id="loginBtn" onclick="doLogin()">
+      <div class="spin" id="spin"></div>
+      로그인
+    </button>
+  </div>
+
+  <div class="login-footer">
+    현대자동차 아산엔진공장 설비관리부 전용 시스템입니다.<br>
+    권한 없는 접근은 금지되어 있습니다.
+  </div>
+
+</div>
+
+<script>
+// 이미 로그인된 경우 바로 이동
+if (sessionStorage.getItem('hmg_auth')) {
+  location.href = '/';
+}
+
+async function doLogin() {
+  const id = document.getElementById('iId').value.trim();
+  const pw = document.getElementById('iPw').value;
+  const errMsg = document.getElementById('errMsg');
+  const btn = document.getElementById('loginBtn');
+  const spin = document.getElementById('spin');
+
+  if (!id) { showErr('아이디를 입력해주세요.'); return; }
+  if (!pw) { showErr('비밀번호를 입력해주세요.'); return; }
+
+  btn.disabled = true;
+  spin.style.display = 'block';
+  errMsg.className = 'err-msg';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, pw })
+    });
+    const data = await res.json();
+
+    if (data.ok) {
+      // 로그인 성공 → 세션 저장 후 메인으로
+      sessionStorage.setItem('hmg_auth', data.token);
+      sessionStorage.setItem('hmg_user', id);
+      location.href = '/';
+    } else {
+      showErr(data.message || '로그인에 실패했습니다.');
+    }
+  } catch (e) {
+    showErr('서버 연결 오류. 잠시 후 다시 시도해주세요.');
+  } finally {
+    btn.disabled = false;
+    spin.style.display = 'none';
+  }
+}
+
+function showErr(msg) {
+  const el = document.getElementById('errMsg');
+  el.textContent = '⚠ ' + msg;
+  el.className = 'err-msg show';
+  // 입력 흔들기 효과
+  const card = document.querySelector('.login-card');
+  card.style.animation = 'none';
+  card.style.transform = 'translateX(6px)';
+  setTimeout(() => { card.style.transform = 'translateX(-6px)'; }, 60);
+  setTimeout(() => { card.style.transform = 'translateX(4px)'; }, 120);
+  setTimeout(() => { card.style.transform = 'translateX(0)'; card.style.transition = 'transform .15s'; }, 180);
+}
+</script>
+</body>
+</html>

@@ -219,6 +219,13 @@ textarea{padding:10px 12px;resize:vertical;min-height:90px;line-height:1.7;font-
 </style>
 </head>
 <body>
+<script>
+(function(){
+  if(!sessionStorage.getItem('hmg_auth')){
+    location.href='/login.html';
+  }
+})();
+</script>
 
 <header>
   <div class="logo">
@@ -226,6 +233,7 @@ textarea{padding:10px 12px;resize:vertical;min-height:90px;line-height:1.7;font-
     <div class="logo-title">아산엔진공장 · AI 설비 트러블슈팅</div>
   </div>
   <div class="hdr-r">
+    <button onclick="logout()" style="font-size:11px;font-weight:600;color:rgba(255,255,255,.6);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:4px 10px;cursor:pointer;font-family:var(--sans)">로그아웃</button>
     <button class="hist-toggle" onclick="toggleHist()">📋 분석 이력</button>
     <div class="ai-dot"></div>
     <span class="ai-lbl">AI ONLINE</span>
@@ -671,6 +679,13 @@ function resetAll(){
   document.getElementById('iSym').value='';
   document.getElementById('urgBadge').className='urg-badge';
   document.getElementById('simHint').classList.remove('show');
+}
+function logout(){
+  if(confirm('로그아웃 하시겠습니까?')){
+    sessionStorage.removeItem('hmg_auth');
+    sessionStorage.removeItem('hmg_user');
+    location.href='/login.html';
+  }
 }
 function showErr(m){const e=document.getElementById('errBox');e.textContent='⚠ '+m;e.classList.add('show');}
 function hideErr(){document.getElementById('errBox').classList.remove('show');}
