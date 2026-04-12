@@ -190,6 +190,8 @@ textarea{padding:10px 12px;resize:vertical;min-height:88px;line-height:1.7;font-
 .r1 .step-item:not(.checked) .step-chk{border-color:var(--blue)}
 .step-txt{font-size:13px;color:var(--t2);line-height:1.6;flex:1}
 .step-item.checked .step-txt{color:var(--t3);text-decoration:line-through}
+.step-diff-btn{font-size:10px;padding:1px 6px;border-radius:3px;cursor:pointer;flex-shrink:0;margin-left:6px;border:1px solid var(--line);background:#F7F6F2;color:var(--t3);transition:all .12s}
+.step-diff-btn:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-lt)}
 
 /* ── 1차: 시퀀스 플로우 UI ── */
 .steps-sequence{display:flex;flex-direction:column;gap:0}
@@ -327,6 +329,50 @@ textarea{padding:10px 12px;resize:vertical;min-height:88px;line-height:1.7;font-
 /* 수정 요청 버튼 (카드 하단) */
 .btn-edit-req{font-size:11px;font-weight:600;font-family:var(--sans);padding:4px 11px;border-radius:4px;border:1px solid var(--line2);color:var(--t3);background:transparent;cursor:pointer;transition:all .15s}
 .btn-edit-req:hover{border-color:var(--blue);color:var(--blue)}
+
+/* ── 3차: 난이도 표시 ── */
+.difficulty-badge {
+  display: inline-flex; align-items: center; gap: 3px;
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 3px; flex-shrink: 0; cursor: help;
+}
+.diff-high   { background: #FDECEA; color: #C0392B; border: 1px solid rgba(192,57,43,.25); }
+.diff-mid    { background: #FEF3E2; color: #D97706; border: 1px solid rgba(217,119,6,.25); }
+.diff-low    { background: #E8F5EE; color: #1A7A45; border: 1px solid rgba(26,122,69,.25); }
+.diff-unknown{ background: #F0EFE9; color: #8A8880; border: 1px solid var(--line); }
+
+/* 난이도 피드백 팝업 */
+.diff-popup {
+  position: fixed; z-index: 600;
+  background: var(--card); border: 1px solid var(--line); border-radius: var(--rl);
+  padding: 14px 16px; box-shadow: 0 8px 28px rgba(0,0,0,.18);
+  width: 280px; display: none;
+}
+.diff-popup.show { display: block; }
+.diff-popup-title { font-size: 13px; font-weight: 700; margin-bottom: 10px; }
+.diff-popup-sub { font-size: 11px; color: var(--t3); margin-bottom: 10px; line-height: 1.6; }
+.diff-popup-btns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 10px; }
+.diff-popup-btn {
+  padding: 7px 0; border-radius: 5px; border: 1.5px solid var(--line);
+  font-size: 12px; font-weight: 700; cursor: pointer; text-align: center;
+  transition: all .15s; font-family: var(--sans);
+}
+.diff-popup-btn.high { color: #C0392B; background: #FDECEA; border-color: rgba(192,57,43,.3); }
+.diff-popup-btn.high:hover, .diff-popup-btn.high.sel { background: #C0392B; color: #fff; border-color: #C0392B; }
+.diff-popup-btn.mid  { color: #D97706; background: #FEF3E2; border-color: rgba(217,119,6,.3); }
+.diff-popup-btn.mid:hover, .diff-popup-btn.mid.sel  { background: #D97706; color: #fff; border-color: #D97706; }
+.diff-popup-btn.low  { color: #1A7A45; background: #E8F5EE; border-color: rgba(26,122,69,.3); }
+.diff-popup-btn.low:hover, .diff-popup-btn.low.sel  { background: #1A7A45; color: #fff; border-color: #1A7A45; }
+.diff-popup-close { font-size:11px; color:var(--t3); cursor:pointer; text-align:center; display:block; margin-top:4px; }
+.diff-stats { font-size: 11px; color: var(--t3); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
+.diff-stat-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.diff-stat-lbl { width: 16px; text-align: center; }
+.diff-stat-bar { flex: 1; height: 4px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.diff-stat-fill { height: 100%; border-radius: 2px; }
+.diff-stat-fill.high { background: #C0392B; }
+.diff-stat-fill.mid  { background: #D97706; }
+.diff-stat-fill.low  { background: #1A7A45; }
+.diff-stat-cnt { font-family: var(--mono); font-size: 10px; color: var(--t3); width: 24px; text-align: right; }
 </style>
 </head>
 <body>
@@ -512,6 +558,20 @@ textarea{padding:10px 12px;resize:vertical;min-height:88px;line-height:1.7;font-
   </div>
 
 </div>
+
+  <!-- 난이도 피드백 팝업 -->
+  <div class="diff-popup" id="diffPopup">
+    <div class="diff-popup-title">난이도 평가</div>
+    <div class="diff-popup-sub" id="diffPopupSub">이 조치 항목의 난이도를 평가해주세요.<br>피드백이 누적되면 정확도가 향상됩니다.</div>
+    <div class="diff-popup-btns">
+      <button class="diff-popup-btn high" onclick="submitDiff('high')">🔴 상<br><span style="font-size:10px;font-weight:400">전문가 필요</span></button>
+      <button class="diff-popup-btn mid"  onclick="submitDiff('mid')">🟠 중<br><span style="font-size:10px;font-weight:400">숙련 작업자</span></button>
+      <button class="diff-popup-btn low"  onclick="submitDiff('low')">🟢 하<br><span style="font-size:10px;font-weight:400">누구나 가능</span></button>
+    </div>
+    <div class="diff-stats" id="diffStats"></div>
+    <span class="diff-popup-close" onclick="closeDiffPopup()">닫기</span>
+  </div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -748,7 +808,12 @@ async function run(){
   try{
     const res = await fetch('/api/analyze',{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({alarm,equip,sys:curSys,sym,feedbackContext:fbCtx,imageBase64:uploadedImageBase64,imageMimeType:uploadedImageType})
+      body:JSON.stringify({
+        alarm,equip,sys:curSys,sym,
+        feedbackContext:fbCtx,
+        imageBase64:uploadedImageBase64,
+        imageMimeType:uploadedImageType
+      })
     });
     clearInterval(timer);
     STEPS.forEach(id=>{const el=document.getElementById(id);el.classList.remove('on');el.classList.add('done');});
@@ -809,12 +874,8 @@ function render(d, alarm, equip, histId, isReload){
       </div>`;
     } else {
       // 체크리스트 UI (기존)
-      stepsHtml = `<div class="steps-checklist" data-sol="${i}">${(sol.steps||[]).map((s,si)=>`
-        <div class="step-item" id="step-${i}-${si}" onclick="toggleStep(this,${i})">
-          <div class="step-chk"></div>
-          <div class="step-txt">${s}</div>
-        </div>`).join('')}
-      </div>`;
+      const solTitleSafe = (sol.title||'').replace(/'/g,"\'");
+      stepsHtml = buildChecklistSteps(sol.steps||[], i, solTitleSafe);
     }
 
     const sourcesHtml = (sol.sources&&sol.sources.length) ? `
@@ -832,9 +893,12 @@ function render(d, alarm, equip, histId, isReload){
           <div class="sol-name">${sol.title||''}</div>
           <div class="sol-sub">예상 복구: ${sol.est_time||'-'}</div>
         </div>
-        <div>
+        <div style="text-align:right">
           <div class="sol-pct-n">${sol.probability||0}%</div>
           <div class="sol-pct-l">확률</div>
+        </div>
+        <div style="align-self:center">
+          ${renderDiffBadge(sol.title||'', i)}
         </div>
       </div>
       <div class="pb-wrap"><div class="pb"><div class="pbf" id="pf${i}"></div></div></div>
@@ -1041,6 +1105,210 @@ function showToast(msg){
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 2차: 멀티턴 대화
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// 3차: 난이도 표시 + 피드백 학습
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+// 난이도 DB (localStorage)
+function getDiffDB(){ try{return JSON.parse(localStorage.getItem('hmg_diff')||'{}')}catch{return{}} }
+function saveDiffDB(db){ localStorage.setItem('hmg_diff', JSON.stringify(db)) }
+
+// 난이도 키: 솔루션 제목 + 조치 인덱스
+function getDiffKey(solTitle, solIdx, stepIdx){ return `${solTitle}_s${solIdx}_t${stepIdx}`.replace(/\s/g,'_') }
+
+// 난이도 집계 → 다수결
+function calcDiff(key){
+  const db = getDiffDB()
+  const d = db[key]
+  if(!d || d.total === 0) return null
+  const counts = {high: d.high||0, mid: d.mid||0, low: d.low||0}
+  return Object.entries(counts).sort((a,b)=>b[1]-a[1])[0][0]
+}
+
+// 난이도 배지 HTML (솔루션 전체)
+function renderDiffBadge(solTitle, solIdx){
+  // 전체 steps의 난이도 중 가장 높은 것을 대표로 표시
+  const sol = currentResult && currentResult.solutions[solIdx]
+  if(!sol) return ''
+  const diffs = (sol.steps||[]).map((_,si) => calcDiff(getDiffKey(solTitle, solIdx, si))).filter(Boolean)
+  if(!diffs.length) return '<span class="difficulty-badge diff-unknown" title="난이도 미평가">? 난이도</span>'
+  const priority = {high:3, mid:2, low:1}
+  const top = diffs.sort((a,b) => (priority[b]||0)-(priority[a]||0))[0]
+  const labels = {high:'🔴 상', mid:'🟠 중', low:'🟢 하'}
+  const cls = {high:'diff-high', mid:'diff-mid', low:'diff-low'}
+  return `<span class="difficulty-badge ${cls[top]}" title="난이도: ${labels[top]}">${labels[top]}</span>`
+}
+
+// 각 step 난이도 버튼 텍스트
+function renderStepDiff(solTitle, solIdx, stepIdx){
+  const key = getDiffKey(solTitle, solIdx, stepIdx)
+  const d = calcDiff(key)
+  const labels = {high:'🔴상', mid:'🟠중', low:'🟢하'}
+  return d ? labels[d] : '📊'
+}
+
+// 팝업 관련 변수
+let diffPopupCtx = {}
+
+function buildChecklistSteps(steps, solIdx, solTitleSafe) {
+  const rows = steps.map(function(s, si) {
+    const preview = s.slice(0,30).replace(/"/g,'&quot;');
+    const diff = renderStepDiff(solTitleSafe, solIdx, si);
+    const id = 'step-'+solIdx+'-'+si;
+    return [
+      '<div class="step-item" id="'+id+'"',
+      ' data-sol="'+solIdx+'" data-step="'+si+'"',
+      ' data-soltitle="'+solTitleSafe+'" data-preview="'+preview+'">',
+      '<div class="step-chk" onclick="stepClick('+solIdx+','+si+')"></div>',
+      '<div class="step-txt" onclick="stepClick('+solIdx+','+si+')" style="flex:1">'+s+'</div>',
+      '<span class="step-diff-btn" onclick="handleStepDiff(event,this)" title="난이도 평가">'+diff+'</span>',
+      '</div>'
+    ].join('');
+  });
+  return '<div class="steps-checklist" data-sol="'+solIdx+'">'+rows.join('')+'</div>';
+}
+
+function stepClick(solIdx, stepIdx) {
+  const el = document.getElementById('step-'+solIdx+'-'+stepIdx);
+  if(el) toggleStep(el, solIdx);
+}
+
+function handleStepDiff(event, btn){
+  const item = btn.closest('.step-item')
+  if(!item) return
+  const solTitle = item.dataset.soltitle || ''
+  const solIdx = parseInt(item.dataset.sol)
+  const stepIdx = parseInt(item.dataset.step)
+  const preview = item.dataset.preview || ''
+  openDiffPopup(event, solTitle, solIdx, stepIdx, preview)
+}
+
+function openDiffPopup(event, solTitle, solIdx, stepIdx, stepPreview){
+  event.stopPropagation()
+  diffPopupCtx = {solTitle, solIdx, stepIdx, stepPreview}
+
+  const key = getDiffKey(solTitle, solIdx, stepIdx)
+  const db = getDiffDB()
+  const d = db[key] || {total:0, high:0, mid:0, low:0}
+
+  // 팝업 내용 업데이트
+  document.getElementById('diffPopupSub').textContent =
+    `"${stepPreview}${stepPreview.length>=30?'...':''}" 항목의 난이도를 평가해주세요.`
+
+  // 기존 선택 버튼 표시
+  document.querySelectorAll('.diff-popup-btn').forEach(b => b.classList.remove('sel'))
+  const myVote = d.myVote
+  if(myVote){
+    document.querySelector(`.diff-popup-btn.${myVote}`)?.classList.add('sel')
+  }
+
+  // 누적 통계 표시
+  const statsEl = document.getElementById('diffStats')
+  if(d.total > 0){
+    const pcts = {
+      high: Math.round((d.high||0)/d.total*100),
+      mid:  Math.round((d.mid||0)/d.total*100),
+      low:  Math.round((d.low||0)/d.total*100)
+    }
+    statsEl.innerHTML = `
+      <div style="font-size:10px;color:var(--t3);margin-bottom:6px">누적 ${d.total}건 피드백</div>
+      <div class="diff-stat-row"><span class="diff-stat-lbl">🔴</span><div class="diff-bar"><div class="diff-stat-bar"><div class="diff-stat-fill high" style="width:${pcts.high}%"></div></div></div><span class="diff-stat-cnt">${d.high||0}</span></div>
+      <div class="diff-stat-row"><span class="diff-stat-lbl">🟠</span><div class="diff-bar"><div class="diff-stat-bar"><div class="diff-stat-fill mid" style="width:${pcts.mid}%"></div></div></div><span class="diff-stat-cnt">${d.mid||0}</span></div>
+      <div class="diff-stat-row"><span class="diff-stat-lbl">🟢</span><div class="diff-bar"><div class="diff-stat-bar"><div class="diff-stat-fill low" style="width:${pcts.low}%"></div></div></div><span class="diff-stat-cnt">${d.low||0}</span></div>`
+  } else {
+    statsEl.innerHTML = '<div style="font-size:11px;color:var(--t4)">아직 피드백 없음</div>'
+  }
+
+  // 팝업 위치 계산
+  const popup = document.getElementById('diffPopup')
+  popup.classList.add('show')
+  const rect = event.target.getBoundingClientRect()
+  const popupH = 260
+  let top = rect.bottom + window.scrollY + 8
+  let left = rect.left + window.scrollX - 100
+  if(left + 280 > window.innerWidth) left = window.innerWidth - 290
+  if(left < 8) left = 8
+  popup.style.top = top + 'px'
+  popup.style.left = left + 'px'
+}
+
+function submitDiff(level){
+  const {solTitle, solIdx, stepIdx} = diffPopupCtx
+  const key = getDiffKey(solTitle, solIdx, stepIdx)
+  const db = getDiffDB()
+  if(!db[key]) db[key] = {total:0, high:0, mid:0, low:0}
+
+  // 이전 투표 취소
+  const prev = db[key].myVote
+  if(prev && db[key][prev] > 0) db[key][prev]--
+  else if(!prev) db[key].total++
+
+  db[key][level]++
+  db[key].myVote = level
+  saveDiffDB(db)
+
+  // 버튼 선택 표시
+  document.querySelectorAll('.diff-popup-btn').forEach(b => b.classList.remove('sel'))
+  document.querySelector(`.diff-popup-btn.${level}`)?.classList.add('sel')
+
+  // step 버튼 텍스트 업데이트
+  const labels = {high:'🔴상', mid:'🟠중', low:'🟢하'}
+  const stepBtn = document.querySelector(`#step-${solIdx}-${stepIdx} .step-diff-btn`)
+  if(stepBtn) stepBtn.textContent = labels[level]
+
+  // 솔루션 배지 업데이트
+  updateSolDiffBadge(solTitle, solIdx)
+
+  showToast(`난이도 "${level === 'high' ? '상' : level === 'mid' ? '중' : '하'}"으로 기록됐습니다.`)
+  setTimeout(() => closeDiffPopup(), 800)
+}
+
+function updateSolDiffBadge(solTitle, solIdx){
+  // 솔루션 카드 헤더의 난이도 배지 업데이트
+  const card = document.querySelector(`.sol-card.r${solIdx+1}`)
+  if(!card) return
+  const badgeEl = card.querySelector('.difficulty-badge')
+  if(!badgeEl) return
+
+  const sol = currentResult && currentResult.solutions[solIdx]
+  if(!sol) return
+  const diffs = (sol.steps||[]).map((_,si) => calcDiff(getDiffKey(solTitle, solIdx, si))).filter(Boolean)
+
+  if(!diffs.length){ badgeEl.textContent = '? 난이도'; badgeEl.className = 'difficulty-badge diff-unknown'; return; }
+
+  const priority = {high:3, mid:2, low:1}
+  const top = diffs.sort((a,b) => (priority[b]||0)-(priority[a]||0))[0]
+  const labels = {high:'🔴 상', mid:'🟠 중', low:'🟢 하'}
+  const cls = {high:'diff-high', mid:'diff-mid', low:'diff-low'}
+  badgeEl.textContent = labels[top]
+  badgeEl.className = `difficulty-badge ${cls[top]}`
+}
+
+function closeDiffPopup(){
+  document.getElementById('diffPopup').classList.remove('show')
+}
+
+// 팝업 외부 클릭 시 닫기
+document.addEventListener('click', (e) => {
+  const popup = document.getElementById('diffPopup')
+  if(popup && popup.classList.contains('show') && !popup.contains(e.target)){
+    closeDiffPopup()
+  }
+})
+
+// analyze.js 프롬프트에 난이도 DB 컨텍스트 제공
+function getDiffContext(solTitle, solIdx, steps){
+  const db = getDiffDB()
+  const diffs = (steps||[]).map((s, si) => {
+    const key = getDiffKey(solTitle, solIdx, si)
+    const d = calcDiff(key)
+    return d ? `${si+1}번(${d==='high'?'상':d==='mid'?'중':'하'})` : null
+  }).filter(Boolean)
+  return diffs.length ? `[현장 난이도 피드백: ${diffs.join(', ')}]` : ''
+}
+
 
 function openChat() {
   if(!currentResult){showToast('먼저 분석을 실행해주세요.');return;}
