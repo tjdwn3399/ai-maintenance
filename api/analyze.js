@@ -100,10 +100,12 @@ export default async function handler(req, res) {
 - 문자열 내 큰따옴표는 반드시 이스케이프(\\").
 - steps 각 항목 45자 이내. description 2~3문장 이내.
 - 확률 합계 100% 근접.
+- answer_type 필드: 질문이 고장 원인/조치 요청이면 "troubleshoot", 점검순서/시퀀스/절차 요청이면 "sequence"로 설정.
+- is_sequence 필드: answer_type이 "sequence"이거나 해당 원인의 steps가 순서/절차 설명이면 true로 설정.
 - sources 필드: 해당 원인 판단의 근거 출처를 배열로 명시. 가능한 값: "SINUMERIK 840D 매뉴얼", "FANUC 서보 매뉴얼", "미쓰비시 MELDAS 매뉴얼", "유압회로 이론", "설비보전 이론", "현장 업로드 매뉴얼: [파일명]", "피드백 이력 DB". 실제 참조한 출처만 포함.
 
 JSON 구조 (반드시 준수):
-{"summary":"2~3문장 요약","urgency_flag":false,"urgency_msg":"","solutions":[{"rank":1,"title":"원인명(15자이내)","probability":60,"description":"기술적 근거 포함 설명","steps":["단계1","단계2","단계3","단계4"],"tags":["태그1","태그2","태그3"],"sources":["출처1","출처2"],"est_time":"예상복구시간"},{"rank":2,"title":"원인명","probability":25,"description":"설명","steps":["단계1","단계2","단계3"],"tags":["태그1","태그2"],"sources":["출처1"],"est_time":"시간"},{"rank":3,"title":"원인명","probability":15,"description":"설명","steps":["단계1","단계2"],"tags":["태그1"],"sources":["출처1"],"est_time":"시간"}],"recommended_parts":[{"name":"부품명","code":"부품코드또는파라미터","in_stock":true}]}`;
+{"summary":"2~3문장 요약","urgency_flag":false,"urgency_msg":"","answer_type":"troubleshoot","solutions":[{"rank":1,"title":"원인명(15자이내)","probability":60,"description":"기술적 근거 포함 설명","is_sequence":false,"steps":["단계1","단계2","단계3","단계4"],"tags":["태그1","태그2","태그3"],"sources":["출처1","출처2"],"est_time":"예상복구시간"},{"rank":2,"title":"원인명","probability":25,"description":"설명","steps":["단계1","단계2","단계3"],"tags":["태그1","태그2"],"sources":["출처1"],"est_time":"시간"},{"rank":3,"title":"원인명","probability":15,"description":"설명","steps":["단계1","단계2"],"tags":["태그1"],"sources":["출처1"],"est_time":"시간"}],"recommended_parts":[{"name":"부품명","code":"부품코드또는파라미터","in_stock":true}]}`;
 
   const alarmStr = alarm ? `알람코드: ${alarm}` : '알람코드: 없음 (증상 기반 분석)';
 
