@@ -478,10 +478,10 @@ textarea{padding:10px 12px;resize:vertical;min-height:88px;line-height:1.7;font-
     <div class="ld-title">AI 분석 중...</div>
     <div class="ld-steps">
       <div class="lstep" id="ls0"><div class="ldot"></div>알람 코드 해석 및 매뉴얼 참조</div>
-      <div class="lstep" id="ls1"><div class="ldot"></div>설비 특성 및 공정 분석</div>
+      <div class="lstep" id="ls1"><div class="ldot"></div>전문가 수준 심층 분석 중</div>
       <div class="lstep" id="ls2"><div class="ldot"></div>유공압·전기·기계 이론 적용</div>
       <div class="lstep" id="ls3"><div class="ldot"></div>과거 피드백 이력 반영</div>
-      <div class="lstep" id="ls4"><div class="ldot"></div>확률 기반 조치 방안 생성</div>
+      <div class="lstep" id="ls4"><div class="ldot"></div>분석 결과 구조화 중</div>
     </div>
   </div>
 
@@ -1390,6 +1390,7 @@ async function sendChat() {
       body: JSON.stringify({
         messages: recentHistory,
         context: contextMsg,
+        expertAnalysis: currentResult?._expertAnalysis || '',
         alarm: lastAlarm,
         equip: lastEquip,
         sys: curSys
@@ -1418,6 +1419,8 @@ async function sendChat() {
 
 function buildContext() {
   if(!currentResult) return '';
+  // 전문가 원문 분석이 있으면 그걸 우선 사용 (훨씬 풍부한 맥락)
+  if(currentResult._expertAnalysis) return currentResult._expertAnalysis;
   const sols = (currentResult.solutions||[]).map((s,i)=>
     `${i+1}순위: ${s.title} (${s.probability}%) - ${s.description}`
   ).join('\n');
